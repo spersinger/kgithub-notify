@@ -14,11 +14,13 @@
 #include <QStyle>
 #include <QApplication>
 #include <QClipboard>
+#include <QHeaderView>
+#include <QTableWidget>
 
 TrendingWindow::TrendingWindow(GitHubClient *client, QWidget *parent)
     : QWidget(parent, Qt::Window), m_client(client) {
     setWindowTitle(tr("Trending Repos & Devs"));
-    resize(600, 400);
+    resize(800, 600); // make it a bit larger to fit columns
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
@@ -42,26 +44,29 @@ TrendingWindow::TrendingWindow(GitHubClient *client, QWidget *parent)
     topLayout->addStretch();
     topLayout->addWidget(refreshButton);
 
-    listWidget = new QListWidget(this);
-    listWidget->setWordWrap(true);
-    listWidget->setContextMenuPolicy(Qt::CustomContextMenu);
+    tableWidget = new QTableWidget(this);
+    tableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
+    tableWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    tableWidget->setWordWrap(true);
+    tableWidget->verticalHeader()->hide();
+    tableWidget->setContextMenuPolicy(Qt::CustomContextMenu);
 
     mainLayout->addLayout(topLayout);
-    mainLayout->addWidget(listWidget);
+    mainLayout->addWidget(tableWidget);
 
     connect(refreshButton, &QPushButton::clicked, this, &TrendingWindow::onRefreshClicked);
     connect(modeComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &TrendingWindow::onModeChanged);
     connect(timeframeComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &TrendingWindow::onRefreshClicked);
-    connect(listWidget, &QListWidget::itemActivated, this, &TrendingWindow::onItemActivated);
-    connect(listWidget, &QListWidget::customContextMenuRequested, this, [this](const QPoint &pos) {
-        QListWidgetItem *item = listWidget->itemAt(pos);
+    connect(tableWidget, &QTableWidget::itemActivated, this, &TrendingWindow::onItemActivated);
+    connect(tableWidget, &QTableWidget::customContextMenuRequested, this, [this](const QPoint &pos) {
+        QTableWidgetItem *item = tableWidget->itemAt(pos);
         if (!item) return;
 
         QMenu menu(this);
         QAction *openAction = menu.addAction(tr("Open in Browser"));
         QAction *copyAction = menu.addAction(tr("Copy Link"));
 
-        QAction *selectedAction = menu.exec(listWidget->mapToGlobal(pos));
+        QAction *selectedAction = menu.exec(tableWidget->mapToGlobal(pos));
         if (selectedAction == openAction) {
             onItemActivated(item);
         } else if (selectedAction == copyAction) {
@@ -85,8 +90,10 @@ void TrendingWindow::onModeChanged(int) {
 void TrendingWindow::onRefreshClicked() {
     if (!m_client) return;
 
-    listWidget->clear();
-    listWidget->addItem(tr("Loading..."));
+    tableWidget->clear();
+    tableWidget->setRowCount(1);
+    tableWidget->setColumnCount(1);
+    tableWidget->setItem(0, 0, new QTableWidgetItem(tr("Loading...")));
 
     int daysToSubtract = 1;
     switch (timeframeComboBox->currentIndex()) {
@@ -129,40 +136,77 @@ void TrendingWindow::onRawDataReceived(const QByteArray &data) {
     }
 
     // Clear the loading text
-    listWidget->clear();
+    tableWidget->clear();
+    tableWidget->setRowCount(0);
 
     QJsonArray items = root["items"].toArray();
+
+    if (items.isEmpty()) {
+        tableWidget->setColumnCount(1);
+        tableWidget->insertRow(0);
+        tableWidget->setItem(0, 0, new QTableWidgetItem(tr("No results found.")));
+        return;
+    }
+
+    if (modeComboBox->currentIndex() == 0) {
+        // Repositories
+        tableWidget->setColumnCount(5);
+        tableWidget->setHorizontalHeaderLabels({tr("Name"), tr("Stars"), tr("Language"), tr("Description"), tr("URL")});
+        tableWidget->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Stretch); // Description
+    } else {
+        // Developers
+        tableWidget->setColumnCount(2);
+        tableWidget->setHorizontalHeaderLabels({tr("Developer"), tr("URL")});
+        tableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch); // URL
+    }
+
     for (int i = 0; i < items.size(); ++i) {
         QJsonObject itemObj = items[i].toObject();
         QString htmlUrl = itemObj["html_url"].toString();
 
-        QListWidgetItem *item = new QListWidgetItem();
+        tableWidget->insertRow(i);
 
         if (modeComboBox->currentIndex() == 0) {
             // Repositories
             QString name = itemObj["full_name"].toString();
             QString desc = itemObj["description"].toString();
-            int stars = itemObj["stargazers_count"].toInt();
+            QString stars = QString::number(itemObj["stargazers_count"].toInt());
             QString lang = itemObj["language"].toString();
 
-            QString text = QString("%1\n★ %2 | %3\n%4").arg(name).arg(stars).arg(lang).arg(desc);
-            item->setText(text);
+            QTableWidgetItem *nameItem = new QTableWidgetItem(name);
+            nameItem->setData(Qt::UserRole, htmlUrl);
+            QTableWidgetItem *starsItem = new QTableWidgetItem(stars);
+            starsItem->setData(Qt::UserRole, htmlUrl);
+            QTableWidgetItem *langItem = new QTableWidgetItem(lang);
+            langItem->setData(Qt::UserRole, htmlUrl);
+            QTableWidgetItem *descItem = new QTableWidgetItem(desc);
+            descItem->setData(Qt::UserRole, htmlUrl);
+            QTableWidgetItem *urlItem = new QTableWidgetItem(htmlUrl);
+            urlItem->setData(Qt::UserRole, htmlUrl);
+
+            tableWidget->setItem(i, 0, nameItem);
+            tableWidget->setItem(i, 1, starsItem);
+            tableWidget->setItem(i, 2, langItem);
+            tableWidget->setItem(i, 3, descItem);
+            tableWidget->setItem(i, 4, urlItem);
         } else {
             // Developers
             QString login = itemObj["login"].toString();
-            item->setText(login);
+
+            QTableWidgetItem *loginItem = new QTableWidgetItem(login);
+            loginItem->setData(Qt::UserRole, htmlUrl);
+            QTableWidgetItem *urlItem = new QTableWidgetItem(htmlUrl);
+            urlItem->setData(Qt::UserRole, htmlUrl);
+
+            tableWidget->setItem(i, 0, loginItem);
+            tableWidget->setItem(i, 1, urlItem);
         }
-
-        item->setData(Qt::UserRole, htmlUrl);
-        listWidget->addItem(item);
     }
 
-    if (items.isEmpty()) {
-        listWidget->addItem(tr("No results found."));
-    }
+    tableWidget->resizeRowsToContents();
 }
 
-void TrendingWindow::onItemActivated(QListWidgetItem *item) {
+void TrendingWindow::onItemActivated(QTableWidgetItem *item) {
     if (!item) return;
     QString url = item->data(Qt::UserRole).toString();
     if (!url.isEmpty()) {

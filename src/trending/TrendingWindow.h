@@ -3,7 +3,7 @@
 
 #include <QWidget>
 #include <QComboBox>
-#include <QListWidget>
+#include <QTableWidget>
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -20,7 +20,7 @@ public:
 
 private slots:
     void onRefreshClicked();
-    void onItemActivated(QListWidgetItem *item);
+    void onItemActivated(QTableWidgetItem *item);
     void onModeChanged(int index);
     void onRawDataReceived(const QByteArray &data);
 
@@ -28,7 +28,7 @@ private:
     QComboBox *modeComboBox;
     QComboBox *timeframeComboBox;
     QPushButton *refreshButton;
-    QListWidget *listWidget;
+    QTableWidget *tableWidget;
     GitHubClient *m_client;
 
     // Store the last requested URL to ignore responses from other raw requests
