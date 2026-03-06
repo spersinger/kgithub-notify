@@ -58,7 +58,7 @@ NotificationWindow::NotificationWindow(const Notification &n, QWidget *parent)
     }
 
     QString apiUrl = n.url;
-    QString htmlUrl = n.htmlUrl.isEmpty() ? GitHubClient::apiToHtmlUrl(apiUrl, n.id) : n.htmlUrl;
+    QString htmlUrl = GitHubClient::apiToHtmlUrl(apiUrl, n.id);
 
     QLabel *urlLabel = new QLabel(tr("<b>API URL:</b> <a href=\"%1\">%1</a>").arg(apiUrl.toHtmlEscaped()));
     urlLabel->setOpenExternalLinks(true);
@@ -100,12 +100,12 @@ NotificationWindow::NotificationWindow(const Notification &n, QWidget *parent)
 }
 
 void NotificationWindow::onOpenUrl() {
-    QString url = m_notification.htmlUrl.isEmpty() ? GitHubClient::apiToHtmlUrl(m_notification.url, m_notification.id) : m_notification.htmlUrl;
+    QString url = GitHubClient::apiToHtmlUrl(m_notification.url, m_notification.id);
     QDesktopServices::openUrl(QUrl(url));
 }
 
 void NotificationWindow::onCopyLink() {
-    QString url = m_notification.htmlUrl.isEmpty() ? GitHubClient::apiToHtmlUrl(m_notification.url, m_notification.id) : m_notification.htmlUrl;
+    QString url = GitHubClient::apiToHtmlUrl(m_notification.url, m_notification.id);
     QApplication::clipboard()->setText(url);
 }
 
