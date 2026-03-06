@@ -726,6 +726,7 @@ void NotificationListWidget::openWindowForItem(QListWidgetItem *item) {
 
     NotificationWindow *win = new NotificationWindow(n, this);
     win->setAttribute(Qt::WA_DeleteOnClose);
+    connect(win, &NotificationWindow::debugApiRequested, this, [this](const QString &url) { emit requestDebugApi(url); });
 
     connect(win, &NotificationWindow::actionRequested, this, [this](const QString &actionName, const QString &id, const QString &url) {
         // Find item by ID

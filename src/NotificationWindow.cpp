@@ -47,25 +47,53 @@ NotificationWindow::NotificationWindow(const Notification &n, QWidget *parent)
     QWidget *centralWidget = new QWidget(this);
     QVBoxLayout *layout = new QVBoxLayout(centralWidget);
 
-    layout->addWidget(new QLabel(tr("<b>ID:</b> %1").arg(n.id.toHtmlEscaped())));
-    layout->addWidget(new QLabel(tr("<b>Title:</b> %1").arg(n.title.toHtmlEscaped())));
-    layout->addWidget(new QLabel(tr("<b>Repository:</b> %1").arg(n.repository.toHtmlEscaped())));
-    layout->addWidget(new QLabel(tr("<b>Type:</b> %1").arg(n.type.toHtmlEscaped())));
-    layout->addWidget(new QLabel(tr("<b>Updated At:</b> %1").arg(n.updatedAt.toHtmlEscaped())));
+    {
+        QLabel *lbl = new QLabel(tr("<b>ID:</b> %1").arg(n.id.toHtmlEscaped()));
+        lbl->setTextInteractionFlags(Qt::TextBrowserInteraction);
+        layout->addWidget(lbl);
+    }
+    {
+        QLabel *lbl = new QLabel(tr("<b>Title:</b> %1").arg(n.title.toHtmlEscaped()));
+        lbl->setTextInteractionFlags(Qt::TextBrowserInteraction);
+        layout->addWidget(lbl);
+    }
+    {
+        QLabel *lbl = new QLabel(tr("<b>Repository:</b> %1").arg(n.repository.toHtmlEscaped()));
+        lbl->setTextInteractionFlags(Qt::TextBrowserInteraction);
+        layout->addWidget(lbl);
+    }
+    {
+        QLabel *lbl = new QLabel(tr("<b>Type:</b> %1").arg(n.type.toHtmlEscaped()));
+        lbl->setTextInteractionFlags(Qt::TextBrowserInteraction);
+        layout->addWidget(lbl);
+    }
+    {
+        QLabel *lbl = new QLabel(tr("<b>Updated At:</b> %1").arg(n.updatedAt.toHtmlEscaped()));
+        lbl->setTextInteractionFlags(Qt::TextBrowserInteraction);
+        layout->addWidget(lbl);
+    }
 
     if (!n.lastReadAt.isEmpty()) {
-        layout->addWidget(new QLabel(tr("<b>Last Read At:</b> %1").arg(n.lastReadAt.toHtmlEscaped())));
+        {
+        QLabel *lbl = new QLabel(tr("<b>Last Read At:</b> %1").arg(n.lastReadAt.toHtmlEscaped()));
+        lbl->setTextInteractionFlags(Qt::TextBrowserInteraction);
+        layout->addWidget(lbl);
+    }
     }
 
     QString apiUrl = n.url;
     QString htmlUrl = GitHubClient::apiToHtmlUrl(apiUrl, n.id);
 
     QLabel *urlLabel = new QLabel(tr("<b>API URL:</b> <a href=\"%1\">%1</a>").arg(apiUrl.toHtmlEscaped()));
-    urlLabel->setOpenExternalLinks(true);
+    urlLabel->setTextInteractionFlags(Qt::TextBrowserInteraction);
+    connect(urlLabel, &QLabel::linkActivated, this, [this](const QString &link) {
+        emit debugApiRequested(link);
+    });
     layout->addWidget(urlLabel);
 
     if (!htmlUrl.isEmpty() && htmlUrl != apiUrl) {
         QLabel *htmlUrlLabel = new QLabel(tr("<b>HTML URL:</b> <a href=\"%1\">%1</a>").arg(htmlUrl.toHtmlEscaped()));
+        htmlUrlLabel->setTextInteractionFlags(Qt::TextBrowserInteraction);
         htmlUrlLabel->setOpenExternalLinks(true);
         layout->addWidget(htmlUrlLabel);
     }

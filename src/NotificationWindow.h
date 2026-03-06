@@ -16,6 +16,7 @@ public:
 
 signals:
     void actionRequested(const QString &actionName, const QString &id, const QString &url);
+    void debugApiRequested(const QString &apiUrl);
 
 private slots:
     void onOpenUrl();
