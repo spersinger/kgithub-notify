@@ -122,7 +122,7 @@ private:
     QAction *copyLinkAction;
     QAction *markAsReadAction;
     QAction *markAsDoneAction;
-    QAction *dismissAction;
+    QAction *viewRawAction;
 };
 
 #endif // NOTIFICATIONLISTWIDGET_H
