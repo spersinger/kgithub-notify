@@ -213,13 +213,13 @@ void TrendingWindow::onRawDataReceived(const QByteArray &data) {
         tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents); // Name
         tableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents); // Stars
         tableWidget->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents); // Language
-        tableWidget->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Stretch);          // Description gets most space
+        tableWidget->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Interactive);      // Description gets calculated width
         tableWidget->horizontalHeader()->setSectionResizeMode(4, QHeaderView::ResizeToContents); // URL
     } else {
         // Developers
         tableWidget->setColumnCount(2);
         tableWidget->setHorizontalHeaderLabels({tr("Developer"), tr("URL")});
-        tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);          // Developer gets most space
+        tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents); // Developer
         tableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents); // URL
     }
 
@@ -287,6 +287,18 @@ void TrendingWindow::onRawDataReceived(const QByteArray &data) {
 
     // Force table to wrap words and calculate correct row heights for descriptions
     tableWidget->setWordWrap(true);
+
+    // Explicitly set the width of the description column to be constrained
+    // It should have a minimum size, and a maximum size (no bigger than the viewport).
+    if (modeComboBox->currentIndex() == 0) {
+        int viewportWidth = tableWidget->viewport()->width();
+        int minDescWidth = 300;
+        int maxDescWidth = viewportWidth > 0 ? viewportWidth : 800;
+        // Try to give it 40% of the viewport width initially, bounded by min and max
+        int targetWidth = qBound(minDescWidth, (int)(viewportWidth * 0.4), maxDescWidth);
+        tableWidget->setColumnWidth(3, targetWidth);
+    }
+
     tableWidget->resizeRowsToContents();
 }
 
