@@ -9,6 +9,7 @@
 #include <QtDBus/QDBusError>
 #include <QStandardPaths>
 #include <QTimer>
+#include <KCoreAddons/KAboutData>
 
 #include "GitHubClient.h"
 #include "MainWindow.h"
@@ -18,13 +19,20 @@
 #endif
 
 int main(int argc, char *argv[]) {
-    QCoreApplication::setOrganizationName("Kgithub-notify");
+    QCoreApplication::setOrganizationName("arran4");
+    QCoreApplication::setOrganizationDomain("arran4.com");
     QCoreApplication::setApplicationName("kgithub-notify");
     QCoreApplication::setApplicationVersion(QStringLiteral(KGHN_APP_VERSION));
-    QGuiApplication::setDesktopFileName("org.kgithub_notify");
+    QGuiApplication::setDesktopFileName("com.arran4.kgithub_notify");
     QApplication::setQuitOnLastWindowClosed(false);
 
     QApplication app(argc, argv);
+
+    KAboutData aboutData(QStringLiteral("kgithub-notify"),
+                         QStringLiteral("KGitHub Notify"),
+                         QStringLiteral(KGHN_APP_VERSION));
+    KAboutData::setApplicationData(aboutData);
+    QGuiApplication::setDesktopFileName("com.arran4.kgithub_notify");
 
     QCommandLineParser parser;
     parser.setApplicationDescription("GitHub Notification System Tray");

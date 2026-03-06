@@ -68,11 +68,14 @@ add_executable(kgithub-notify
     src/resources.qrc
 )
 
+find_package(KF5CoreAddons REQUIRED)
+
 target_link_libraries(kgithub-notify
     Qt5::Widgets
     Qt5::Network
     Qt5::Svg
     Qt5::DBus
+    KF5::CoreAddons
     KF5::Wallet
     KF5::Notifications
 )
@@ -88,7 +91,7 @@ install(TARGETS kgithub-notify
 
 install(FILES kgithub-notify.desktop
     DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
-    RENAME org.kgithub_notify.desktop
+    RENAME com.arran4.kgithub_notify.desktop
 )
 
 install(FILES src/assets/icon.svg
