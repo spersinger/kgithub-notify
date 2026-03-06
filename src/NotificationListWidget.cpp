@@ -42,9 +42,9 @@ NotificationListWidget::NotificationListWidget(QWidget *parent)
     // Setup Context Menu
     contextMenu = new QMenu(this);
 
-    openAction = new QAction(tr("Open in Browser"), this);
-    connect(openAction, &QAction::triggered, this, &NotificationListWidget::openCurrentItem);
-    contextMenu->addAction(openAction);
+    openUrlAction = new QAction(tr("Open in Browser"), this);
+    connect(openUrlAction, &QAction::triggered, this, &NotificationListWidget::openUrlCurrentItem);
+    contextMenu->addAction(openUrlAction);
 
     openWindowAction = new QAction(tr("Open"), this);
     connect(openWindowAction, &QAction::triggered, this, &NotificationListWidget::openWindowCurrentItem);
