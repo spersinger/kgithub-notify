@@ -169,9 +169,7 @@ void WorkItemWindow::appendRow(const QJsonObject &item)
     QString repo = repoUrl.section('/', -2); // Gets owner/repo
 
     QTableWidgetItem *repoItem = new QTableWidgetItem(repo);
-    // Prefix title with Issue/PR to indicate type since they are now mixed
-    QString typeStr = item["pull_request"].isObject() ? tr("[PR] ") : tr("[Issue] ");
-    QTableWidgetItem *titleItem = new QTableWidgetItem(typeStr + title);
+    QTableWidgetItem *titleItem = new QTableWidgetItem(title);
     QTableWidgetItem *stateItem = new QTableWidgetItem(state);
     QTableWidgetItem *authorItem = new QTableWidgetItem(author);
     QTableWidgetItem *createdItem = new QTableWidgetItem(createdAt);

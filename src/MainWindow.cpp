@@ -896,30 +896,43 @@ void MainWindow::setupMenus() {
     toolsMenu->addAction(repoListAction);
     toolsMenu->addSeparator();
 
-    QMenu *workItemsMenu = toolsMenu->addMenu(tr("Work Items"));
+    QMenu *issuesMenu = toolsMenu->addMenu(tr("Open Issues"));
+    QMenu *prsMenu = toolsMenu->addMenu(tr("Open Pull Requests"));
 
     struct Variant {
         QString name;
         QString query;
+        bool appliesToIssues;
+        bool appliesToPrs;
     };
     QList<Variant> variants = {
-        {tr("Created by me"), "author:@me archived:false"},
-        {tr("Assigned to me"), "assignee:@me archived:false"},
-        {tr("I was mentioned in them"), "mentions:@me archived:false"},
-        {tr("Review was requested"), "review-requested:@me archived:false"},
-        {tr("Repos I have contributed to"), "involves:@me archived:false"},
-        {tr("My repos"), "user:@me archived:false"},
-        {tr("My forks"), "user:@me fork:true archived:false"},
-        {tr("Repos I have admin access to"), "user:@me archived:false"},
-        {tr("Archived"), "archived:true involves:@me"}
+        {tr("Created by me"), "author:@me archived:false", true, true},
+        {tr("Assigned to me"), "assignee:@me archived:false", true, true},
+        {tr("I was mentioned in them"), "mentions:@me archived:false", true, true},
+        {tr("Review was requested"), "review-requested:@me archived:false", false, true},
+        {tr("Repos I have contributed to"), "involves:@me archived:false", true, true},
+        {tr("My repos"), "user:@me archived:false", true, true},
+        {tr("My forks"), "user:@me fork:true archived:false", true, true},
+        {tr("Repos I have admin access to"), "user:@me archived:false", true, true},
+        {tr("Archived"), "archived:true involves:@me", true, true}
     };
 
     for (const auto& v : variants) {
-        QAction *action = new QAction(v.name, this);
-        connect(action, &QAction::triggered, this, [this, v]() {
-            showWorkItems(QString("Work Items - %1").arg(v.name), QString("is:open %1").arg(v.query));
-        });
-        workItemsMenu->addAction(action);
+        if (v.appliesToIssues) {
+            QAction *issueAction = new QAction(v.name, this);
+            connect(issueAction, &QAction::triggered, this, [this, v]() {
+                showWorkItems(QString("Issues - %1").arg(v.name), QString("is:open is:issue %1").arg(v.query));
+            });
+            issuesMenu->addAction(issueAction);
+        }
+
+        if (v.appliesToPrs) {
+            QAction *prAction = new QAction(v.name, this);
+            connect(prAction, &QAction::triggered, this, [this, v]() {
+                showWorkItems(QString("Pull Requests - %1").arg(v.name), QString("is:open is:pr %1").arg(v.query));
+            });
+            prsMenu->addAction(prAction);
+        }
     }
 }
 
