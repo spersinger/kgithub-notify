@@ -142,12 +142,13 @@ void WorkItemWindow::onReplyFinished(QNetworkReply *reply)
             appendRow(items[i].toObject());
         }
 
-        if (items.size() == 100 && m_allData.size() < 1000) {
+        if (items.size() > 0 && m_allData.size() < totalCount && m_allData.size() < 1000) {
             m_statusLabel->setText(tr("Loading page %1... (Total: %2)").arg(m_currentPage + 1).arg(totalCount));
             loadData(m_currentPage + 1);
         } else {
             saveCache();
-            m_statusLabel->setText(tr("Items: %1 | Last refresh: %2").arg(m_allData.size()).arg(QDateTime::currentDateTime().toString()));
+            QString limitMsg = (totalCount > 1000) ? tr(" (GitHub Search Limit Reached)") : "";
+            m_statusLabel->setText(tr("Items: %1%2 | Last refresh: %3").arg(m_allData.size()).arg(limitMsg).arg(QDateTime::currentDateTime().toString()));
         }
     } else {
         QMessageBox::warning(this, tr("Error"), tr("Failed to fetch data: %1").arg(reply->errorString()));
