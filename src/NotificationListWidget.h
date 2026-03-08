@@ -19,6 +19,7 @@ class NotificationListWidget : public QWidget {
 public:
     explicit NotificationListWidget(QWidget *parent = nullptr);
 
+    void setClient(GitHubClient *client) { m_client = client; }
     void setNotifications(const QList<Notification> &notifications, bool append, bool hasMore);
     void setFilterMode(int mode); // 0: Inbox, 1: Unread, 2: Read
     void setSortMode(int mode);
@@ -117,6 +118,8 @@ private:
     bool m_hasMore;
 
     // Context Menu
+    GitHubClient *m_client;
+
     QMenu *contextMenu;
     QAction *openWindowAction;
     QAction *openUrlAction;

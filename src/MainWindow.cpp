@@ -95,6 +95,8 @@ void MainWindow::setClient(GitHubClient *c) {
     connect(client, &GitHubClient::errorOccurred, this, &MainWindow::showError);
     connect(client, &GitHubClient::authError, this, &MainWindow::onAuthError);
 
+    notificationListWidget->setClient(client);
+
     connect(client, &GitHubClient::detailsError, notificationListWidget, &NotificationListWidget::updateError);
     connect(client, &GitHubClient::detailsReceived, notificationListWidget, &NotificationListWidget::updateDetails);
     connect(client, &GitHubClient::imageReceived, notificationListWidget, &NotificationListWidget::updateImage);

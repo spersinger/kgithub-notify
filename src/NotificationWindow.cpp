@@ -8,9 +8,14 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QWidget>
+#include <QJsonDocument>
+#include <QDialog>
+#include <QTextEdit>
+#include "PullRequestWindow.h"
+#include "ActionWindow.h"
 
-NotificationWindow::NotificationWindow(const Notification &n, QWidget *parent)
-    : QMainWindow(parent, Qt::Window), m_notification(n) {
+NotificationWindow::NotificationWindow(const Notification &n, GitHubClient *client, QWidget *parent)
+    : QMainWindow(parent, Qt::Window), m_notification(n), m_client(client) {
     setWindowTitle(tr("Notification Details - %1").arg(n.repository));
     resize(500, 400);
 
@@ -43,6 +48,25 @@ NotificationWindow::NotificationWindow(const Notification &n, QWidget *parent)
     connect(markAsDoneAction, &QAction::triggered, this, &NotificationWindow::onMarkAsDone);
     actionsMenu->addAction(markAsDoneAction);
 
+    actionsMenu->addSeparator();
+
+    QAction *viewRawAction = new QAction(QIcon::fromTheme("text-x-generic"), tr("View Raw JSON"), this);
+    connect(viewRawAction, &QAction::triggered, this, &NotificationWindow::onViewRawJson);
+    actionsMenu->addAction(viewRawAction);
+
+    QAction *viewPullRequestAction = nullptr;
+    QAction *viewActionJobAction = nullptr;
+
+    if (m_notification.type == "PullRequest") {
+        viewPullRequestAction = new QAction(QIcon::fromTheme("vcs-merge-request"), tr("View Pull Request"), this);
+        connect(viewPullRequestAction, &QAction::triggered, this, &NotificationWindow::onViewPullRequest);
+        actionsMenu->addAction(viewPullRequestAction);
+    } else if (m_notification.type == "CheckSuite" || m_notification.type == "WorkflowRun") {
+        viewActionJobAction = new QAction(QIcon::fromTheme("system-run"), tr("View Action Job"), this);
+        connect(viewActionJobAction, &QAction::triggered, this, &NotificationWindow::onViewActionJob);
+        actionsMenu->addAction(viewActionJobAction);
+    }
+
     // Tool Bar
     QToolBar *toolBar = addToolBar(tr("Actions"));
     toolBar->addAction(openUrlAction);
@@ -50,6 +74,17 @@ NotificationWindow::NotificationWindow(const Notification &n, QWidget *parent)
     toolBar->addSeparator();
     toolBar->addAction(markAsReadAction);
     toolBar->addAction(markAsDoneAction);
+    toolBar->addSeparator();
+    toolBar->addAction(viewRawAction);
+
+    if (viewPullRequestAction) {
+        toolBar->addSeparator();
+        toolBar->addAction(viewPullRequestAction);
+    }
+    if (viewActionJobAction) {
+        toolBar->addSeparator();
+        toolBar->addAction(viewActionJobAction);
+    }
 
     // Central Widget
     QWidget *centralWidget = new QWidget(this);
@@ -124,6 +159,17 @@ NotificationWindow::NotificationWindow(const Notification &n, QWidget *parent)
     connect(closeAndReadBtn, &QPushButton::clicked, this, &NotificationWindow::onCloseAndMarkAsRead);
     bottomLayout->addWidget(closeAndReadBtn);
 
+    if (viewPullRequestAction) {
+        QPushButton *viewPrBtn = new QPushButton(QIcon::fromTheme("vcs-merge-request"), tr("View Pull Request"));
+        connect(viewPrBtn, &QPushButton::clicked, this, &NotificationWindow::onViewPullRequest);
+        bottomLayout->addWidget(viewPrBtn);
+    }
+    if (viewActionJobAction) {
+        QPushButton *viewActionBtn = new QPushButton(QIcon::fromTheme("system-run"), tr("View Action Job"));
+        connect(viewActionBtn, &QPushButton::clicked, this, &NotificationWindow::onViewActionJob);
+        bottomLayout->addWidget(viewActionBtn);
+    }
+
     layout->addLayout(bottomLayout);
 
     setCentralWidget(centralWidget);
@@ -157,4 +203,35 @@ void NotificationWindow::onMarkAsDone() {
 void NotificationWindow::onCloseAndMarkAsRead() {
     emit actionRequested("markAsRead", m_notification.id, m_notification.url);
     close();
+}
+
+void NotificationWindow::onViewRawJson() {
+    QJsonObject json = m_notification.toJson();
+    QJsonDocument doc(json);
+    QString rawJson = QString::fromUtf8(doc.toJson(QJsonDocument::Indented));
+
+    QDialog *dialog = new QDialog(this);
+    dialog->setWindowTitle(tr("Raw JSON"));
+    dialog->resize(600, 400);
+
+    QVBoxLayout *layout = new QVBoxLayout(dialog);
+    QTextEdit *textEdit = new QTextEdit(dialog);
+    textEdit->setReadOnly(true);
+    textEdit->setPlainText(rawJson);
+    layout->addWidget(textEdit);
+
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+    dialog->show();
+}
+
+void NotificationWindow::onViewPullRequest() {
+    PullRequestWindow *win = new PullRequestWindow(m_notification, m_client, this);
+    win->setAttribute(Qt::WA_DeleteOnClose);
+    win->show();
+}
+
+void NotificationWindow::onViewActionJob() {
+    ActionWindow *win = new ActionWindow(m_notification, m_client, this);
+    win->setAttribute(Qt::WA_DeleteOnClose);
+    win->show();
 }
