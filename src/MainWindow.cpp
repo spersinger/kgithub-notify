@@ -896,15 +896,6 @@ void MainWindow::setupMenus() {
     connect(refreshActionMenu, &QAction::triggered, this, &MainWindow::onRefreshClicked);
     viewMenu->addAction(refreshActionMenu);
 
-    QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
-    QAction *aboutAction = new QAction(themedIcon({QStringLiteral("help-about")}), tr("&About KGitHub Notify"), this);
-    connect(aboutAction, &QAction::triggered, this, &MainWindow::showAboutDialog);
-    helpMenu->addAction(aboutAction);
-
-    QAction *aboutQtAction = new QAction(tr("About &Qt"), this);
-    connect(aboutQtAction, &QAction::triggered, qApp, &QApplication::aboutQt);
-    helpMenu->addAction(aboutQtAction);
-
     QMenu *toolsMenu = menuBar()->addMenu(tr("&Tools"));
 
     QAction *trendingAction = new QAction(tr("Trending Repos & Devs"), this);
@@ -988,6 +979,15 @@ void MainWindow::setupMenus() {
     createSubMenu(prsMenu, tr("All Statuses"), "", "is:pr", 1);
 
     createSubMenu(reposMenu, "", "", "", 2);
+
+    QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
+    QAction *aboutAction = new QAction(themedIcon({QStringLiteral("help-about")}), tr("&About KGitHub Notify"), this);
+    connect(aboutAction, &QAction::triggered, this, &MainWindow::showAboutDialog);
+    helpMenu->addAction(aboutAction);
+
+    QAction *aboutQtAction = new QAction(tr("About &Qt"), this);
+    connect(aboutQtAction, &QAction::triggered, qApp, &QApplication::aboutQt);
+    helpMenu->addAction(aboutQtAction);
 }
 
 void MainWindow::showWorkItems(const QString &title, int endpointType, const QString &query) {
