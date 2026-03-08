@@ -18,6 +18,7 @@
 #include <QTableWidget>
 #include <QTextEdit>
 #include <QDialog>
+#include <QSettings>
 
 TrendingWindow::TrendingWindow(GitHubClient *client, QWidget *parent)
     : QWidget(parent, Qt::Window), m_client(client) {
@@ -126,6 +127,10 @@ TrendingWindow::TrendingWindow(GitHubClient *client, QWidget *parent)
     if (m_client) {
         connect(m_client, &GitHubClient::rawDataReceived, this, &TrendingWindow::onRawDataReceived);
     }
+
+    QSettings settings("arran4", "kgithub-notify-trending");
+    QStringList seenUrls = settings.value("seen_urls").toStringList();
+    m_selectedUrls = QSet<QString>(seenUrls.begin(), seenUrls.end());
 
     // Initial fetch
     onRefreshClicked();
@@ -362,10 +367,12 @@ void TrendingWindow::onRepoStarredCheckFinished(QNetworkReply *reply) {
 
 void TrendingWindow::onItemSelectionChanged() {
     QList<QTableWidgetItem *> selected = tableWidget->selectedItems();
+    bool changed = false;
     for (QTableWidgetItem *item : selected) {
         QString url = item->data(Qt::UserRole).toString();
         if (!url.isEmpty() && !m_selectedUrls.contains(url)) {
             m_selectedUrls.insert(url);
+            changed = true;
             int row = item->row();
             for (int col = 0; col < tableWidget->columnCount(); ++col) {
                 QTableWidgetItem *colItem = tableWidget->item(row, col);
@@ -382,5 +389,10 @@ void TrendingWindow::onItemSelectionChanged() {
                 w->setFont(font);
             }
         }
+    }
+
+    if (changed) {
+        QSettings settings("arran4", "kgithub-notify-trending");
+        settings.setValue("seen_urls", QStringList(m_selectedUrls.begin(), m_selectedUrls.end()));
     }
 }
