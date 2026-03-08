@@ -22,7 +22,8 @@ NotificationListWidget::NotificationListWidget(QWidget *parent)
       loadMoreItem(nullptr),
       m_filterMode(0),
       m_sortMode(SortDefault),
-      m_hasMore(false) {
+      m_hasMore(false),
+      m_client(nullptr) {
 
     QVBoxLayout *layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -754,7 +755,7 @@ void NotificationListWidget::openWindowForItem(QListWidgetItem *item) {
     QJsonObject json = item->data(Qt::UserRole + 4).toJsonObject();
     Notification n = Notification::fromJson(json);
 
-    NotificationWindow *win = new NotificationWindow(n, this);
+    NotificationWindow *win = new NotificationWindow(n, m_client, this);
     win->setAttribute(Qt::WA_DeleteOnClose);
     connect(win, &NotificationWindow::debugApiRequested, this, [this](const QString &url) { emit requestDebugApi(url); });
 

@@ -8,11 +8,12 @@
 #include <QToolBar>
 #include <QStatusBar>
 #include "Notification.h"
+#include "GitHubClient.h"
 
 class NotificationWindow : public QMainWindow {
     Q_OBJECT
 public:
-    explicit NotificationWindow(const Notification &notification, QWidget *parent = nullptr);
+    explicit NotificationWindow(const Notification &notification, GitHubClient *client, QWidget *parent = nullptr);
 
 signals:
     void actionRequested(const QString &actionName, const QString &id, const QString &url);
@@ -24,9 +25,13 @@ private slots:
     void onMarkAsRead();
     void onMarkAsDone();
     void onCloseAndMarkAsRead();
+    void onViewRawJson();
+    void onViewPullRequest();
+    void onViewActionJob();
 
 private:
     Notification m_notification;
+    GitHubClient *m_client;
 };
 
 #endif // NOTIFICATIONWINDOW_H
