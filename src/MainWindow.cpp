@@ -961,7 +961,7 @@ void MainWindow::setupMenus() {
     connect(aboutQtAction, &QAction::triggered, qApp, &QApplication::aboutQt);
     actionCollection()->addAction(QStringLiteral("about_qt"), aboutQtAction);
 
-    setupGUI(Default, "kgithub-notifyui.rc");
+    setupGUI(Default, ":/kgithub-notifyui.rc");
 }
 void MainWindow::showWorkItems(const QString &title, int endpointType, const QString &query) {
     WorkItemWindow::EndpointType type = (endpointType == 0) ? WorkItemWindow::EndpointIssues : WorkItemWindow::EndpointRepositories;

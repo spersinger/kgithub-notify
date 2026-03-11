@@ -58,7 +58,7 @@ void RepoListWindow::setupUI() {
     header->setSectionResizeMode(QHeaderView::ResizeToContents);
     header->setStretchLastSection(true);
 
-    setupGUI(Default, "kgithub-notifyui.rc");
+    setupGUI(Default, ":/kgithub-notifyui.rc");
     setCentralWidget(m_table);
 
     // Toolbar

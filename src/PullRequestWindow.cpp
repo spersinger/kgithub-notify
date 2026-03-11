@@ -20,7 +20,7 @@ PullRequestWindow::PullRequestWindow(const Notification &n, GitHubClient *client
 void PullRequestWindow::setupUi()
 {
     m_tabWidget = new QTabWidget(this);
-    setupGUI(Default, "kgithub-notifyui.rc");
+    setupGUI(Default, ":/kgithub-notifyui.rc");
     setCentralWidget(m_tabWidget);
 
     // 1. Conversation Tab

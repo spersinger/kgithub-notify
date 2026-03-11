@@ -172,7 +172,7 @@ NotificationWindow::NotificationWindow(const Notification &n, GitHubClient *clie
 
     layout->addLayout(bottomLayout);
 
-    setupGUI(Default, "kgithub-notifyui.rc");
+    setupGUI(Default, ":/kgithub-notifyui.rc");
     setCentralWidget(centralWidget);
 
     // Status Bar
