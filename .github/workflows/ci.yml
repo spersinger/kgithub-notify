@@ -88,8 +88,16 @@ jobs:
       matrix:
         os: [ubuntu-latest]
       fail-fast: false
+    container:
+      image: debian:testing
 
     steps:
+    - name: Pre-install core tools for container
+      run: |
+        apt-get update
+        apt-get install -y git sudo curl jq
+        git config --global --add safe.directory /__w/kgithub-notify/kgithub-notify
+
     - uses: actions/checkout@v4
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
@@ -125,17 +133,24 @@ jobs:
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update
-        sudo apt-get install -y qtbase5-dev qttools5-dev-tools libqt5svg5-dev cmake build-essential
+        sudo apt-get install -y qt6-base-dev qt6-svg-dev qt6-tools-dev qt6-tools-dev-tools \
+          libkf6wallet-dev libkf6notifications-dev libkf6coreaddons-dev libkf6xmlgui-dev \
+          libkf6configwidgets-dev libkf6i18n-dev build-essential cmake
 
     - name: Configure CMake
       run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 
     - name: Build
-      run: cmake --build build --config Release
+      run: cmake --build build --config Release -j$(nproc)
+
+    - name: Test
+      run: |
+        cd build
+        QT_QPA_PLATFORM=offscreen ctest --output-on-failure
 
     - name: Verify Binary
       run: |
-        if [ -f build/Kgithub-notify ]; then
+        if [ -f build/kgithub-notify ]; then
           echo "Binary built successfully"
         else
           echo "Binary not found"
@@ -146,7 +161,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: build-artifacts-${{ matrix.os }}
-        path: build/Kgithub-notify
+        path: build/kgithub-notify
 
   release:
     name: Release
@@ -168,7 +183,7 @@ jobs:
         with:
           tag_name: ${{ needs.build-and-test.outputs.new_tag || github.ref_name }}
           name: Release ${{ needs.build-and-test.outputs.new_tag || github.ref_name }}
-          files: build/Kgithub-notify
+          files: build/kgithub-notify
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -180,7 +195,7 @@ jobs:
           name: Snapshot ${{ github.run_id }}
           draft: false
           prerelease: true
-          files: build/Kgithub-notify
+          files: build/kgithub-notify
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
