@@ -1,4 +1,4 @@
-FROM public.ecr.aws/debian/debian:testing
+FROM mcr.microsoft.com/devcontainers/base:debian
 
 ENV DEBIAN_FRONTEND=noninteractive
 
