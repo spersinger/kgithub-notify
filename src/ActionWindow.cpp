@@ -19,7 +19,7 @@ ActionWindow::ActionWindow(const Notification &n, GitHubClient *client, QWidget 
 void ActionWindow::setupUi()
 {
     QWidget *centralWidget = new QWidget(this);
-    setupGUI(Default, "kgithub-notifyui.rc");
+    setupGUI(Default, ":/kgithub-notifyui.rc");
     setCentralWidget(centralWidget);
 
     QVBoxLayout *layout = new QVBoxLayout(centralWidget);

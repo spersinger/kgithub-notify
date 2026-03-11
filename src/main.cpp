@@ -5,11 +5,13 @@
 #include <QFileInfo>
 #include <QGuiApplication>
 #include <QMessageBox>
+#include <QDir>
 #include <QtDBus/QDBusConnection>
 #include <QtDBus/QDBusError>
 #include <QStandardPaths>
 #include <QTimer>
 #include <KAboutData>
+#include <KLocalizedString>
 
 #include "GitHubClient.h"
 #include "MainWindow.h"
@@ -29,9 +31,12 @@ int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
     QApplication::setWindowIcon(QIcon::fromTheme("kgithub-notify", QIcon(":/assets/icon.png")));
 
+    KLocalizedString::setApplicationDomain("kgithub-notify");
+
     KAboutData aboutData(QStringLiteral("kgithub-notify"),
                          QStringLiteral("KGitHub Notify"),
                          QStringLiteral(KGHN_APP_VERSION));
+    aboutData.setDesktopFileName("com.arran4.kgithub_notify");
     KAboutData::setApplicationData(aboutData);
     QGuiApplication::setDesktopFileName("com.arran4.kgithub_notify");
 
@@ -95,10 +100,30 @@ int main(int argc, char *argv[]) {
     window.setClient(&client);
 
     if (!desktopFileFound) {
-        qWarning() << "Warning: Desktop file" << desktopFileName << "not found in standard locations.";
-        qWarning() << "System tray and notifications may not work correctly with portals.";
+        QString userAppsPath = QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation);
+        QString destPath = userAppsPath + "/" + desktopFileName;
+        bool copied = false;
 
-        window.showDesktopFileWarning(desktopFileName, appPaths);
+        if (QFile::exists(":/kgithub-notify.desktop")) {
+            // Ensure the directory exists
+            QDir dir(userAppsPath);
+            if (!dir.exists()) {
+                dir.mkpath(".");
+            }
+            if (QFile::copy(":/kgithub-notify.desktop", destPath)) {
+                // Set appropriate permissions
+                QFile::setPermissions(destPath, QFile::ReadOwner | QFile::WriteOwner | QFile::ReadGroup | QFile::ReadOther);
+                copied = true;
+                desktopFileFound = true;
+            }
+        }
+
+        if (!copied) {
+            qWarning() << "Warning: Desktop file" << desktopFileName << "not found in standard locations.";
+            qWarning() << "System tray and notifications may not work correctly with portals.";
+
+            window.showDesktopFileWarning(desktopFileName, appPaths);
+        }
     }
 
     if (!parser.isSet(backgroundOption)) {

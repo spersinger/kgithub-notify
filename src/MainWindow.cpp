@@ -961,7 +961,7 @@ void MainWindow::setupMenus() {
     connect(aboutQtAction, &QAction::triggered, qApp, &QApplication::aboutQt);
     actionCollection()->addAction(QStringLiteral("about_qt"), aboutQtAction);
 
-    setupGUI(Default, "kgithub-notifyui.rc");
+    setupGUI(Default, ":/kgithub-notifyui.rc");
 
     // Fallback for Tools menu if KXmlGui fails to render it
     bool toolsFound = false;

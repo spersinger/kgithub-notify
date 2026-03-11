@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y \
     libkf6coreaddons-dev \
     libkf6xmlgui-dev \
     libkf6configwidgets-dev \
+    libkf6i18n-dev \
     libgl1-mesa-dev \
     && rm -rf /var/lib/apt/lists/*
 

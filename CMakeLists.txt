@@ -75,6 +75,7 @@ add_executable(kgithub-notify
 find_package(KF6CoreAddons REQUIRED)
 find_package(KF6XmlGui REQUIRED)
 find_package(KF6ConfigWidgets REQUIRED)
+find_package(KF6I18n REQUIRED)
 
 target_link_libraries(kgithub-notify
     Qt6::Widgets
@@ -84,6 +85,7 @@ target_link_libraries(kgithub-notify
     KF6::CoreAddons
     KF6::XmlGui
     KF6::ConfigWidgets
+    KF6::I18n
     KF6::Wallet
     KF6::Notifications
 )
@@ -97,7 +99,7 @@ install(TARGETS kgithub-notify
     BUNDLE DESTINATION .
 )
 
-install(FILES kgithub-notify.desktop
+install(FILES src/kgithub-notify.desktop
     DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
     RENAME com.arran4.kgithub_notify.desktop
 )
