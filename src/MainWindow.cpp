@@ -1,6 +1,9 @@
+#include <KActionCollection>
+#include <KStandardAction>
+#include <KActionMenu>
 #include "MainWindow.h"
 
-#include <QAction>
+#include <QtGui/QAction>
 #include <QApplication>
 #include <QClipboard>
 #include <QCloseEvent>
@@ -52,7 +55,7 @@ static int calculateSafeInterval(int minutes) {
 // -----------------------------------------------------------------------------
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent),
+    : KXmlGuiWindow(parent),
       debugWindow(nullptr),
       repoListWindow(nullptr),
       trendingWindow(nullptr),
@@ -860,91 +863,67 @@ void MainWindow::setupPages() {
 }
 
 void MainWindow::setupMenus() {
-    QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
-
-    QAction *settingsAction = new QAction(themedIcon({QStringLiteral("settings-configure")}), tr("&Settings"), this);
-    settingsAction->setShortcut(QKeySequence::Preferences);
-    connect(settingsAction, &QAction::triggered, this, &MainWindow::showSettings);
-    fileMenu->addAction(settingsAction);
+    KStandardAction::preferences(this, &MainWindow::showSettings, actionCollection());
+    KStandardAction::quit(qApp, &QApplication::quit, actionCollection());
+    KStandardAction::close(this, &MainWindow::close, actionCollection());
+    KStandardAction::selectAll(this, &MainWindow::onSelectAllClicked, actionCollection());
+    KStandardAction::deselect(this, &MainWindow::onSelectNoneClicked, actionCollection());
+    KStandardAction::redisplay(this, &MainWindow::onRefreshClicked, actionCollection());
+    KStandardAction::aboutApp(this, &MainWindow::showAboutDialog, actionCollection());
 
     QAction *notificationsSettingsAction = new QAction(themedIcon({QStringLiteral("preferences-desktop-notification")}),
                                                        tr("Configure &Notifications..."), this);
     connect(notificationsSettingsAction, &QAction::triggered, this, &MainWindow::openKdeNotificationSettings);
-    fileMenu->addAction(notificationsSettingsAction);
-
-    fileMenu->addSeparator();
-
-    QAction *closeAction = new QAction(themedIcon({QStringLiteral("window-close")}), tr("&Close"), this);
-    closeAction->setShortcut(QKeySequence::Close);
-    connect(closeAction, &QAction::triggered, this, &MainWindow::close);
-    fileMenu->addAction(closeAction);
-
-    QAction *quitAction = new QAction(themedIcon({QStringLiteral("application-exit")}), tr("&Quit"), this);
-    quitAction->setShortcut(QKeySequence::Quit);
-    connect(quitAction, &QAction::triggered, qApp, &QApplication::quit);
-    fileMenu->addAction(quitAction);
-
-    QMenu *editMenu = menuBar()->addMenu(tr("&Edit"));
-
-    QAction *selectAllMenuAction = new QAction(tr("Select &All"), this);
-    selectAllMenuAction->setShortcut(QKeySequence::SelectAll);
-    connect(selectAllMenuAction, &QAction::triggered, this, &MainWindow::onSelectAllClicked);
-    editMenu->addAction(selectAllMenuAction);
-
-    QAction *selectNoneMenuAction = new QAction(tr("Select &None"), this);
-    selectNoneMenuAction->setShortcut(QKeySequence("Ctrl+Shift+A"));
-    connect(selectNoneMenuAction, &QAction::triggered, this, &MainWindow::onSelectNoneClicked);
-    editMenu->addAction(selectNoneMenuAction);
-
-    QMenu *viewMenu = menuBar()->addMenu(tr("&View"));
-    QAction *refreshActionMenu = new QAction(themedIcon({QStringLiteral("view-refresh")}), tr("&Refresh"), this);
-    refreshActionMenu->setShortcut(QKeySequence::Refresh);
-    connect(refreshActionMenu, &QAction::triggered, this, &MainWindow::onRefreshClicked);
-    viewMenu->addAction(refreshActionMenu);
-
-    QMenu *toolsMenu = menuBar()->addMenu(tr("&Tools"));
+    actionCollection()->addAction(QStringLiteral("notifications_settings"), notificationsSettingsAction);
 
     QAction *trendingAction = new QAction(tr("Trending Repos & Devs"), this);
     connect(trendingAction, &QAction::triggered, this, &MainWindow::showTrendingWindow);
-    toolsMenu->addAction(trendingAction);
+    actionCollection()->addAction(QStringLiteral("trending"), trendingAction);
 
     QAction *debugAction = new QAction(tr("Debug GitHub API"), this);
     connect(debugAction, &QAction::triggered, this, [this]() { showDebugWindow(); });
-    toolsMenu->addAction(debugAction);
+    actionCollection()->addAction(QStringLiteral("debug"), debugAction);
 
     QAction *repoListAction = new QAction(tr("Repositories List"), this);
     connect(repoListAction, &QAction::triggered, this, &MainWindow::showRepoListWindow);
-    toolsMenu->addAction(repoListAction);
-    toolsMenu->addSeparator();
+    actionCollection()->addAction(QStringLiteral("repo_list"), repoListAction);
 
-    QMenu *issuesMenu = toolsMenu->addMenu(tr("Issues"));
-    QMenu *prsMenu = toolsMenu->addMenu(tr("Pull Requests"));
-    QMenu *reposMenu = toolsMenu->addMenu(tr("Repositories"));
+    KActionMenu *issuesMenu = new KActionMenu(tr("Issues"), this);
+    actionCollection()->addAction(QStringLiteral("issues_menu"), issuesMenu);
+
+    KActionMenu *prsMenu = new KActionMenu(tr("Pull Requests"), this);
+    actionCollection()->addAction(QStringLiteral("prs_menu"), prsMenu);
+
+    KActionMenu *reposMenu = new KActionMenu(tr("Repositories"), this);
+    actionCollection()->addAction(QStringLiteral("repos_menu"), reposMenu);
 
     struct Variant {
         QString name;
+        QString actionId;
         QString issueQuery;
         QString prQuery;
         QString repoQuery;
     };
 
     QList<Variant> variants = {
-        {tr("Created by me"), "author:@me archived:false", "author:@me archived:false", "user:@me archived:false"},
-        {tr("Assigned to me"), "assignee:@me archived:false", "assignee:@me archived:false", ""},
-        {tr("I was mentioned in them"), "mentions:@me archived:false", "mentions:@me archived:false", ""},
-        {tr("Review was requested"), "", "review-requested:@me archived:false", ""},
-        {tr("Repos I have contributed to"), "involves:@me archived:false", "involves:@me archived:false", ""},
-        {tr("My repos"), "user:@me archived:false", "user:@me archived:false", "user:@me archived:false"},
-        {tr("My forks"), "user:@me fork:true archived:false", "user:@me fork:true archived:false", "user:@me fork:true archived:false"},
-        {tr("Repos I have admin access to"), "user:@me archived:false", "user:@me archived:false", "user:@me archived:false"},
-        {tr("Archived"), "archived:true involves:@me", "archived:true involves:@me", "archived:true user:@me"},
-        {tr("All (Unfiltered)"), "involves:@me", "involves:@me", "user:@me"}
+        {tr("Created by me"), "created_by_me", "author:@me archived:false", "author:@me archived:false", "user:@me archived:false"},
+        {tr("Assigned to me"), "assigned_to_me", "assignee:@me archived:false", "assignee:@me archived:false", ""},
+        {tr("I was mentioned in them"), "mentioned", "mentions:@me archived:false", "mentions:@me archived:false", ""},
+        {tr("Review was requested"), "review_requested", "", "review-requested:@me archived:false", ""},
+        {tr("Repos I have contributed to"), "contributed", "involves:@me archived:false", "involves:@me archived:false", ""},
+        {tr("My repos"), "my_repos", "user:@me archived:false", "user:@me archived:false", "user:@me archived:false"},
+        {tr("My forks"), "my_forks", "user:@me fork:true archived:false", "user:@me fork:true archived:false", "user:@me fork:true archived:false"},
+        {tr("Repos I have admin access to"), "admin_access", "user:@me archived:false", "user:@me archived:false", "user:@me archived:false"},
+        {tr("Archived"), "archived", "archived:true involves:@me", "archived:true involves:@me", "archived:true user:@me"},
+        {tr("All (Unfiltered)"), "unfiltered", "involves:@me", "involves:@me", "user:@me"}
     };
 
-    auto createSubMenu = [&](QMenu* parentMenu, const QString& statusName, const QString& statusQuery, const QString& typeQuery, int endpointType) {
-        QMenu* statusMenu = parentMenu;
+    auto createSubMenu = [&](KActionMenu* parentMenu, const QString& statusName, const QString& statusId, const QString& statusQuery, const QString& typeQuery, int endpointType) {
+        KActionMenu* statusMenu = parentMenu;
         if (!statusName.isEmpty()) {
-            statusMenu = parentMenu->addMenu(statusName);
+            statusMenu = new KActionMenu(statusName, this);
+            actionCollection()->addAction(QStringLiteral("submenu_") + statusId, statusMenu);
+            parentMenu->addAction(statusMenu);
         }
 
         for (const auto& v : variants) {
@@ -955,47 +934,35 @@ void MainWindow::setupMenus() {
 
             if (vQuery.isEmpty()) continue;
 
+            QString finalQuery = QString("%1 %2 %3").arg(typeQuery, statusQuery, vQuery).trimmed();
             QAction *action = new QAction(v.name, this);
             connect(action, &QAction::triggered, this, [=]() {
-                QStringList queryParts;
-                if (!typeQuery.isEmpty()) queryParts << typeQuery;
-                if (!statusQuery.isEmpty()) queryParts << statusQuery;
-                if (!vQuery.isEmpty()) queryParts << vQuery;
-
-                QString finalQuery = queryParts.join(" ");
-
-                QString fullTitle = parentMenu->title();
-                if (!statusName.isEmpty()) fullTitle += " - " + statusName;
-                fullTitle += " - " + v.name;
-
-                int actualEndpoint = (endpointType == 2) ? 1 : 0; // 0 = Issues, 1 = Repositories
-                showWorkItems(fullTitle, actualEndpoint, finalQuery);
+                showWorkItems(v.name, endpointType, finalQuery);
             });
+
+            QString actionName = QStringLiteral("action_") + statusId + QStringLiteral("_") + v.actionId;
+            actionCollection()->addAction(actionName, action);
             statusMenu->addAction(action);
         }
     };
 
-    createSubMenu(issuesMenu, tr("Open"), "is:open", "is:issue", 0);
-    createSubMenu(issuesMenu, tr("Closed"), "is:closed", "is:issue", 0);
-    createSubMenu(issuesMenu, tr("All Statuses"), "", "is:issue", 0);
+    createSubMenu(issuesMenu, tr("Open"), "issues_open", "is:open", "is:issue", 0);
+    createSubMenu(issuesMenu, tr("Closed"), "issues_closed", "is:closed", "is:issue", 0);
+    createSubMenu(issuesMenu, tr("All Statuses"), "issues_all", "", "is:issue", 0);
 
-    createSubMenu(prsMenu, tr("Open"), "is:open", "is:pr", 1);
-    createSubMenu(prsMenu, tr("Closed"), "is:closed", "is:pr", 1);
-    createSubMenu(prsMenu, tr("Merged"), "is:merged", "is:pr", 1);
-    createSubMenu(prsMenu, tr("All Statuses"), "", "is:pr", 1);
+    createSubMenu(prsMenu, tr("Open"), "prs_open", "is:open", "is:pr", 1);
+    createSubMenu(prsMenu, tr("Closed"), "prs_closed", "is:closed", "is:pr", 1);
+    createSubMenu(prsMenu, tr("Merged"), "prs_merged", "is:merged", "is:pr", 1);
+    createSubMenu(prsMenu, tr("All Statuses"), "prs_all", "", "is:pr", 1);
 
-    createSubMenu(reposMenu, "", "", "", 2);
-
-    QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
-    QAction *aboutAction = new QAction(themedIcon({QStringLiteral("help-about")}), tr("&About KGitHub Notify"), this);
-    connect(aboutAction, &QAction::triggered, this, &MainWindow::showAboutDialog);
-    helpMenu->addAction(aboutAction);
+    createSubMenu(reposMenu, "", "repos", "", "", 2);
 
     QAction *aboutQtAction = new QAction(tr("About &Qt"), this);
     connect(aboutQtAction, &QAction::triggered, qApp, &QApplication::aboutQt);
-    helpMenu->addAction(aboutQtAction);
-}
+    actionCollection()->addAction(QStringLiteral("about_qt"), aboutQtAction);
 
+    setupGUI(Default, "kgithub-notifyui.rc");
+}
 void MainWindow::showWorkItems(const QString &title, int endpointType, const QString &query) {
     WorkItemWindow::EndpointType type = (endpointType == 0) ? WorkItemWindow::EndpointIssues : WorkItemWindow::EndpointRepositories;
     WorkItemWindow *window = new WorkItemWindow(client, title, type, query, this);
@@ -1069,21 +1036,20 @@ void MainWindow::sendNotification(const Notification &n) {
     notification->setText(n.title);
 
     // Actions
-    QStringList actions;
-    actions << tr("Open in GitHub") << tr("Open kgithub-notify");
-    notification->setActions(actions);
-
-    connect(notification, &KNotification::action1Activated, this, [this, n]() {
+    auto action1 = notification->addAction(tr("Open in GitHub"));
+    connect(action1, &KNotificationAction::activated, this, [this, n]() {
         QString htmlUrl = GitHubClient::apiToHtmlUrl(n.url, n.id);
         QDesktopServices::openUrl(QUrl(htmlUrl));
     });
 
-    connect(notification, &KNotification::action2Activated, this, [this, n]() {
+    auto action2 = notification->addAction(tr("Open kgithub-notify"));
+    connect(action2, &KNotificationAction::activated, this, [this, n]() {
         if(notificationListWidget) notificationListWidget->focusNotification(n.id);
         ensureWindowActive();
     });
 
-    connect(notification, &KNotification::defaultActivated, this, [this]() { this->ensureWindowActive(); });
+    auto defaultAction = notification->addDefaultAction(tr("Open"));
+    connect(defaultAction, &KNotificationAction::activated, this, [this]() { this->ensureWindowActive(); });
     connect(notification, &KNotification::closed, notification, &QObject::deleteLater);
 
     notification->sendEvent();
@@ -1105,13 +1071,11 @@ void MainWindow::sendSummaryNotification(int count, const QList<Notification> &n
     notification->setText(summary.trimmed());
 
     // Actions
-    QStringList actions;
-    actions << tr("Open kgithub-notify");
-    notification->setActions(actions);
+    auto action1 = notification->addAction(tr("Open kgithub-notify"));
+    connect(action1, &KNotificationAction::activated, this, [this]() { this->ensureWindowActive(); });
 
-    connect(notification, &KNotification::action1Activated, this, [this]() { this->ensureWindowActive(); });
-
-    connect(notification, &KNotification::defaultActivated, this, [this]() {
+    auto defaultAction = notification->addDefaultAction(tr("Open"));
+    connect(defaultAction, &KNotificationAction::activated, this, [this]() {
         this->showNormal();
         this->activateWindow();
     });

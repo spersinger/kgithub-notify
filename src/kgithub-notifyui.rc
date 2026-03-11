@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gui name="kgithub-notify" version="1"
+     xmlns="http://www.kde.org/standards/kxmlgui/1.0"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.kde.org/standards/kxmlgui/1.0
+                         http://www.kde.org/standards/kxmlgui/1.0/kxmlgui.xsd">
+
+    <MenuBar>
+        <Menu name="file">
+            <Action name="notifications_settings"/>
+        </Menu>
+        <Menu name="tools">
+            <text>&amp;Tools</text>
+            <Action name="trending"/>
+            <Action name="debug"/>
+            <Action name="repo_list"/>
+            <Separator/>
+            <Action name="issues_menu"/>
+            <Action name="prs_menu"/>
+            <Action name="repos_menu"/>
+        </Menu>
+        <Menu name="help">
+            <Action name="about_qt"/>
+        </Menu>
+    </MenuBar>
+</gui>
