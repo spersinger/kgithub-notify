@@ -1,5 +1,5 @@
 #include "TrendingWindow.h"
-#include "NewIssueDialog.h"
+#include "../NewIssueDialog.h"
 
 #include <QApplication>
 #include <QClipboard>
