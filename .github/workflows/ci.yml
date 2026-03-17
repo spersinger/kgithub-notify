@@ -2,43 +2,136 @@ name: Qt C++ CI/CD
 
 on:
   push:
-    # Disable branch pushes to save minutes
-    branches-ignore:
-      - '**'
+    branches: [main, master]
     tags:
       - 'v*'
+      - 'v*.*.*'
+      - 'v*.*.*-rc*'
+      - 'v*.*.*-beta*'
+      - 'test-*'
   pull_request:
-    # Disable PR runs to save minutes
-    branches-ignore:
-      - '**'
+    types: [opened, synchronize, reopened, ready_for_review, closed]
+    branches: [main, master]
   release:
     types: [published]
   workflow_dispatch:
     inputs:
-      action:
-        description: 'Action to perform'
+      mode:
+        description: "Pipeline mode"
         required: true
-        default: 'lint-fix'
+        default: "lint-fix"
         type: choice
         options:
-        - 'lint-fix'
-        - 'build-test'
-        - 'snapshot'
-        - 'release-major'
-        - 'release-minor'
-        - 'release-patch'
+          - lint-fix
+          - build-test
+          - snapshot
+          - release-major
+          - release-minor
+          - release-patch
+          - monthly-maintenance
+      release_version_override:
+        description: "Optional explicit release version (for example 2.4.0 or 2.4.0-rc.2)"
+        required: false
+        default: ""
+        type: string
+      allow_prs:
+        description: "Allow automation to open pull requests"
+        required: false
+        default: true
+        type: boolean
+  schedule:
+    - cron: '17 3 1 * *'
+    - cron: '41 2 * * *'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: write
   pull-requests: write
+  checks: write
+  packages: write
+  security-events: write
 
 jobs:
+  route:
+    name: Route event
+    runs-on: ubuntu-latest
+    outputs:
+      run_code_checks: ${{ steps.route.outputs.run_code_checks }}
+      run_pr_meta_checks: ${{ steps.route.outputs.run_pr_meta_checks }}
+      run_cleanup: ${{ steps.route.outputs.run_cleanup }}
+      run_release: ${{ steps.route.outputs.run_release }}
+      is_monthly: ${{ steps.route.outputs.is_monthly }}
+      is_nightly: ${{ steps.route.outputs.is_nightly }}
+    steps:
+      - id: route
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          run_code_checks=false
+          run_pr_meta_checks=false
+          run_cleanup=false
+          run_release=false
+          is_monthly=false
+          is_nightly=false
+
+          case "${{ github.event_name }}" in
+            push)
+              run_code_checks=true
+              if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+                run_release=true
+              fi
+              ;;
+            pull_request)
+              if [[ "${{ github.event.action }}" == "closed" ]]; then
+                run_cleanup=true
+              else
+                run_pr_meta_checks=true
+                if [[ "${{ github.event.pull_request.head.repo.full_name || '' }}" != "${{ github.repository }}" ]]; then
+                  run_code_checks=true
+                fi
+              fi
+              ;;
+            release)
+              run_release=true
+              ;;
+            workflow_dispatch)
+              run_code_checks=true
+              if [[ "${{ inputs.mode }}" == release-* ]]; then
+                run_release=true
+              fi
+              if [[ "${{ inputs.mode }}" == "monthly-maintenance" ]]; then
+                is_monthly=true
+              fi
+              if [[ "${{ inputs.mode }}" == "lint-fix" ]]; then
+                is_nightly=true
+              fi
+              ;;
+            schedule)
+              run_code_checks=true
+              if [[ "${{ github.event.schedule }}" == "17 3 1 * *" ]]; then
+                is_monthly=true
+              fi
+              if [[ "${{ github.event.schedule }}" == "41 2 * * *" ]]; then
+                is_nightly=true
+              fi
+              ;;
+          esac
+
+          echo "run_code_checks=$run_code_checks" >> "$GITHUB_OUTPUT"
+          echo "run_pr_meta_checks=$run_pr_meta_checks" >> "$GITHUB_OUTPUT"
+          echo "run_cleanup=$run_cleanup" >> "$GITHUB_OUTPUT"
+          echo "run_release=$run_release" >> "$GITHUB_OUTPUT"
+          echo "is_monthly=$is_monthly" >> "$GITHUB_OUTPUT"
+          echo "is_nightly=$is_nightly" >> "$GITHUB_OUTPUT"
+
   lint-and-fmt:
     name: Lint & Format Check
+    needs: route
+    if: ${{ needs.route.outputs.run_code_checks == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -61,7 +154,7 @@ jobs:
         run: |
           if ! git diff --exit-code; then
             echo "clang-format found changes."
-            if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ "${{ github.event.inputs.action }}" == "lint-fix" ]; then
+            if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ "${{ inputs.mode }}" == "lint-fix" ]; then
               # Create PR if manually triggered for lint-fix
               git config --global user.email "actions@github.com"
               git config --global user.name "GitHub Actions"
@@ -77,13 +170,49 @@ jobs:
             fi
           fi
 
-  build-and-test:
-    name: Build & Test on ${{ matrix.os }}
-    needs: lint-and-fmt
-    if: ${{ github.event.inputs.action != 'lint-fix' }}
-    runs-on: ${{ matrix.os }}
+  bump-version:
+    name: Bump Version
+    needs: [route, lint-and-fmt]
+    if: ${{ github.event_name == 'workflow_dispatch' && startsWith(inputs.mode, 'release-') }}
+    runs-on: ubuntu-latest
     outputs:
       new_tag: ${{ steps.bump.outputs.new_tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Bump Version
+        id: bump
+        shell: bash
+        run: |
+          CURRENT_VERSION=$(grep -Po 'project\(kgithub-notify VERSION \K[0-9]+\.[0-9]+\.[0-9]+' CMakeLists.txt)
+          IFS='.' read -r major minor patch <<< "$CURRENT_VERSION"
+          if [ "${{ inputs.mode }}" == "release-major" ]; then
+            major=$((major + 1))
+            minor=0
+            patch=0
+          elif [ "${{ inputs.mode }}" == "release-minor" ]; then
+            minor=$((minor + 1))
+            patch=0
+          elif [ "${{ inputs.mode }}" == "release-patch" ]; then
+            patch=$((patch + 1))
+          fi
+          NEW_VERSION="${major}.${minor}.${patch}"
+          sed -i "s/project(kgithub-notify VERSION $CURRENT_VERSION)/project(kgithub-notify VERSION $NEW_VERSION)/" CMakeLists.txt
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+          git add CMakeLists.txt
+          git commit -m "chore: bump version to $NEW_VERSION"
+          git tag "v$NEW_VERSION"
+          git push origin HEAD:${{ github.ref_name }}
+          git push origin "v$NEW_VERSION"
+          echo "new_tag=v$NEW_VERSION" >> $GITHUB_OUTPUT
+
+  build-and-test:
+    name: Build & Test on ${{ matrix.os }}
+    needs: [route, lint-and-fmt, bump-version]
+    if: ${{ always() && needs.route.outputs.run_code_checks == 'true' && needs.lint-and-fmt.result == 'success' && (needs.bump-version.result == 'success' || needs.bump-version.result == 'skipped') }}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -100,34 +229,8 @@ jobs:
 
     - uses: actions/checkout@v4
       with:
+        ref: ${{ needs.bump-version.outputs.new_tag || github.ref }}
         token: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Bump Version
-      id: bump
-      if: ${{ github.event_name == 'workflow_dispatch' && startsWith(github.event.inputs.action, 'release-') }}
-      run: |
-        CURRENT_VERSION=$(grep -Po 'project\(kgithub-notify VERSION \K[0-9]+\.[0-9]+\.[0-9]+' CMakeLists.txt)
-        IFS='.' read -r major minor patch <<< "$CURRENT_VERSION"
-        if [ "${{ github.event.inputs.action }}" == "release-major" ]; then
-          major=$((major + 1))
-          minor=0
-          patch=0
-        elif [ "${{ github.event.inputs.action }}" == "release-minor" ]; then
-          minor=$((minor + 1))
-          patch=0
-        elif [ "${{ github.event.inputs.action }}" == "release-patch" ]; then
-          patch=$((patch + 1))
-        fi
-        NEW_VERSION="${major}.${minor}.${patch}"
-        sed -i "s/project(kgithub-notify VERSION $CURRENT_VERSION)/project(kgithub-notify VERSION $NEW_VERSION)/" CMakeLists.txt
-        git config --global user.email "actions@github.com"
-        git config --global user.name "GitHub Actions"
-        git add CMakeLists.txt
-        git commit -m "chore: bump version to $NEW_VERSION"
-        git tag "v$NEW_VERSION"
-        git push origin HEAD:${{ github.ref_name }}
-        git push origin "v$NEW_VERSION"
-        echo "new_tag=v$NEW_VERSION" >> $GITHUB_OUTPUT
 
     - name: Install Dependencies (Linux)
       if: runner.os == 'Linux'
@@ -165,11 +268,13 @@ jobs:
 
   release:
     name: Release
-    needs: [build-and-test]
-    if: ${{ startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && (github.event.inputs.action == 'snapshot' || startsWith(github.event.inputs.action, 'release-'))) }}
+    needs: [route, build-and-test, bump-version]
+    if: ${{ always() && (needs.route.outputs.run_release == 'true' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'snapshot')) && needs.build-and-test.result == 'success' && (needs.bump-version.result == 'success' || needs.bump-version.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.bump-version.outputs.new_tag || github.ref }}
 
       - name: Download Artifacts
         uses: actions/download-artifact@v4
@@ -179,16 +284,16 @@ jobs:
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
-        if: ${{ startsWith(github.ref, 'refs/tags/v') || startsWith(github.event.inputs.action, 'release-') }}
+        if: ${{ needs.route.outputs.run_release == 'true' }}
         with:
-          tag_name: ${{ needs.build-and-test.outputs.new_tag || github.ref_name }}
-          name: Release ${{ needs.build-and-test.outputs.new_tag || github.ref_name }}
+          tag_name: ${{ needs.bump-version.outputs.new_tag || github.ref_name }}
+          name: Release ${{ needs.bump-version.outputs.new_tag || github.ref_name }}
           files: build/kgithub-notify
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Snapshot Release (Manual)
-        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'snapshot' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'snapshot' }}
         uses: softprops/action-gh-release@v1
         with:
           tag_name: snapshot-${{ github.run_id }}
@@ -201,8 +306,8 @@ jobs:
 
   update-ebuild:
     name: Update Ebuild in arrans_overlay
-    needs: [release]
-    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [route, release, bump-version]
+    if: ${{ always() && needs.route.outputs.run_release == 'true' && needs.release.result == 'success' && (needs.bump-version.result == 'success' || needs.bump-version.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout arrans_overlay
@@ -231,7 +336,12 @@ jobs:
         run: |
           cd arrans_overlay
           # Extract version from tag
-          VERSION="${GITHUB_REF#refs/tags/v}"
+          VERSION="${{ needs.bump-version.outputs.new_tag }}"
+          if [ -z "$VERSION" ]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          else
+            VERSION="${VERSION#v}"
+          fi
 
           # Find the latest ebuild
           EBUILD_DIR="dev-vcs/kgithub-notify"
@@ -253,7 +363,12 @@ jobs:
           GH_TOKEN: ${{ secrets.OVERLAY_GITHB_TOKEN }}
         run: |
           cd arrans_overlay
-          VERSION="${GITHUB_REF#refs/tags/v}"
+          VERSION="${{ needs.bump-version.outputs.new_tag }}"
+          if [ -z "$VERSION" ]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          else
+            VERSION="${VERSION#v}"
+          fi
           BRANCH_NAME="update-kgithub-notify-${VERSION}"
 
           git checkout -b $BRANCH_NAME
