@@ -53,6 +53,7 @@ permissions:
   checks: write
   packages: write
   security-events: write
+  discussions: write
 
 jobs:
   route:
@@ -290,6 +291,7 @@ jobs:
           name: Release ${{ needs.bump-version.outputs.new_tag || github.ref_name }}
           files: build/kgithub-notify
           generate_release_notes: true
+          discussion_category_name: Announcements
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -303,6 +305,7 @@ jobs:
           prerelease: true
           files: build/kgithub-notify
           generate_release_notes: true
+          discussion_category_name: Announcements
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
