@@ -763,6 +763,7 @@ void MainWindow::setupNotificationList() {
 
 void MainWindow::setupToolbar() {
     toolbar = new QToolBar(this);
+    toolbar->setObjectName("MainToolBar");
     toolbar->setMovable(false);
     addToolBar(Qt::TopToolBarArea, toolbar);
 
@@ -1113,7 +1114,7 @@ void MainWindow::updateTrayIconState(int unreadCount, int newNotifications,
 
     trayIcon->setIcon(QIcon(":/assets/icon-dotted.png"));
     if (newNotifications > 0) {
-        if (newNotifications > 10) {
+        if (newNotifications > 3) {
             sendSummaryNotification(newNotifications, newlyAddedNotifications);
         } else {
             for (const Notification &n : newlyAddedNotifications) {

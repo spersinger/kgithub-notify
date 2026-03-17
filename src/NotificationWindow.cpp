@@ -70,6 +70,7 @@ NotificationWindow::NotificationWindow(const Notification &n, GitHubClient *clie
 
     // Tool Bar
     QToolBar *toolBar = addToolBar(tr("Actions"));
+    toolBar->setObjectName("NotificationActionsToolBar");
     toolBar->addAction(openUrlAction);
     toolBar->addAction(copyLinkAction);
     toolBar->addSeparator();
