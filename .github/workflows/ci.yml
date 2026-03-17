@@ -283,7 +283,7 @@ jobs:
           path: build
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         if: ${{ needs.route.outputs.run_release == 'true' }}
         with:
           tag_name: ${{ needs.bump-version.outputs.new_tag || github.ref_name }}
@@ -296,7 +296,7 @@ jobs:
 
       - name: Create Snapshot Release (Manual)
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'snapshot' }}
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: snapshot-${{ github.run_id }}
           name: Snapshot ${{ github.run_id }}
