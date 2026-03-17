@@ -47,6 +47,7 @@ void NewIssueDialog::setupUI() {
     }
 
     m_repoComboBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    m_repoComboBox->setCurrentIndex(-1); // Start empty
     connect(m_repoComboBox, &QComboBox::currentTextChanged, this, &NewIssueDialog::onRepoTextChanged);
     repoLayout->addWidget(m_repoComboBox);
 
@@ -118,6 +119,7 @@ void NewIssueDialog::loadCache() {
                 }
                 repoNames.sort();
                 m_repoComboBox->addItems(repoNames);
+                m_repoComboBox->setCurrentIndex(-1); // Empty by default
             }
         }
     }
