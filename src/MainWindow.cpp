@@ -763,6 +763,7 @@ void MainWindow::setupNotificationList() {
 
 void MainWindow::setupToolbar() {
     toolbar = new QToolBar(this);
+    toolbar->setObjectName("MainToolBar");
     toolbar->setMovable(false);
     addToolBar(Qt::TopToolBarArea, toolbar);
 
@@ -1113,11 +1114,18 @@ void MainWindow::updateTrayIconState(int unreadCount, int newNotifications,
 
     trayIcon->setIcon(QIcon(":/assets/icon-dotted.png"));
     if (newNotifications > 0) {
-        if (newNotifications > 10) {
+        int threshold = SettingsDialog::getSummaryThreshold();
+        int stepDelayMs = SettingsDialog::getNotificationDelayMs();
+
+        if (newNotifications > threshold) {
             sendSummaryNotification(newNotifications, newlyAddedNotifications);
         } else {
+            int delayMs = 0;
             for (const Notification &n : newlyAddedNotifications) {
-                sendNotification(n);
+                QTimer::singleShot(delayMs, this, [this, n]() {
+                    sendNotification(n);
+                });
+                delayMs += stepDelayMs;
             }
         }
     }

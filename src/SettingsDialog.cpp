@@ -86,6 +86,35 @@ SettingsDialog::SettingsDialog(QWidget *parent) : QDialog(parent), testClient(nu
     }
     layout->addWidget(dataOptionCombo);
 
+    // Notifications configuration
+    QLabel *summaryThresholdLabel = new QLabel("Max notifications before summary:", this);
+    layout->addWidget(summaryThresholdLabel);
+
+    summaryThresholdCombo = new QComboBox(this);
+    summaryThresholdCombo->addItems({"0", "1", "2", "3", "5", "10"});
+    int currentThreshold = getSummaryThreshold();
+    index = summaryThresholdCombo->findText(QString::number(currentThreshold));
+    if (index >= 0) {
+        summaryThresholdCombo->setCurrentIndex(index);
+    } else {
+        summaryThresholdCombo->setCurrentText("3");
+    }
+    layout->addWidget(summaryThresholdCombo);
+
+    QLabel *notificationDelayLabel = new QLabel("Notification delay (ms):", this);
+    layout->addWidget(notificationDelayLabel);
+
+    notificationDelayCombo = new QComboBox(this);
+    notificationDelayCombo->addItems({"0", "500", "1000", "1500", "2000", "5000"});
+    int currentDelay = getNotificationDelayMs();
+    index = notificationDelayCombo->findText(QString::number(currentDelay));
+    if (index >= 0) {
+        notificationDelayCombo->setCurrentIndex(index);
+    } else {
+        notificationDelayCombo->setCurrentText("1000");
+    }
+    layout->addWidget(notificationDelayCombo);
+
     // Startup
     autostartCheckBox = new QCheckBox("Run on startup", this);
     startMinimizedCheckBox = new QCheckBox("Start minimized (tray only)", this);
@@ -140,6 +169,8 @@ void SettingsDialog::saveSettings() {
     QSettings settings;
     settings.setValue("interval", intervalCombo->currentText().toInt());
     settings.setValue("dataOption", dataOptionCombo->currentData().toInt());
+    settings.setValue("summaryThreshold", summaryThresholdCombo->currentText().toInt());
+    settings.setValue("notificationDelayMs", notificationDelayCombo->currentText().toInt());
 
     updateAutostartEntry();
 
@@ -196,6 +227,16 @@ int SettingsDialog::getInterval() {
 SettingsDialog::GetDataOption SettingsDialog::getGetDataOption() {
     QSettings settings;
     return static_cast<GetDataOption>(settings.value("dataOption", GetDataOption::Manual).toInt());
+}
+
+int SettingsDialog::getSummaryThreshold() {
+    QSettings settings;
+    return settings.value("summaryThreshold", 3).toInt();
+}
+
+int SettingsDialog::getNotificationDelayMs() {
+    QSettings settings;
+    return settings.value("notificationDelayMs", 1000).toInt();
 }
 
 void SettingsDialog::onTestClicked() {

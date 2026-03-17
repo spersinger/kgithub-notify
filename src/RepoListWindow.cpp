@@ -69,6 +69,7 @@ void RepoListWindow::setupUI() {
 
     // Toolbar
     m_toolbar = addToolBar(tr("Main Toolbar"));
+    m_toolbar->setObjectName("RepoListMainToolBar");
     m_toolbar->setMovable(false);
 
     QAction *refreshAction = new QAction(QIcon::fromTheme("view-refresh"), tr("Refresh"), this);

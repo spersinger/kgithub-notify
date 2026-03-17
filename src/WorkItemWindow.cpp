@@ -95,6 +95,7 @@ void WorkItemWindow::setupUi() {
 
     // Tool Bar
     QToolBar *toolBar = addToolBar(tr("Main Toolbar"));
+    toolBar->setObjectName("WorkItemMainToolBar");
     toolBar->addAction(refreshAction);
     toolBar->addSeparator();
     toolBar->addAction(exportCsvAction);
