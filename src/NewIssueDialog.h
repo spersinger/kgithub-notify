@@ -17,6 +17,7 @@ class NewIssueDialog : public QDialog {
 
    public:
     explicit NewIssueDialog(GitHubClient *client, QWidget *parent = nullptr);
+    void setInitialRepo(const QString &repoFullName);
 
    private slots:
     void onRepoTextChanged(const QString &text);
@@ -37,6 +38,7 @@ class NewIssueDialog : public QDialog {
     QComboBox *m_repoComboBox;
     QLineEdit *m_titleEdit;
     QTextEdit *m_bodyEdit;
+    QLineEdit *m_assigneeEdit;
     QPushButton *m_createButton;
     QPushButton *m_refreshButton;
     QLabel *m_statusLabel;
@@ -44,6 +46,7 @@ class NewIssueDialog : public QDialog {
 
     QJsonArray m_allRepos;
     QString m_currentVerifyRepo;
+    bool m_isFetchingRepos;
 };
 
 #endif // NEWISSUEDIALOG_H

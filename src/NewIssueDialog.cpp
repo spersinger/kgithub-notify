@@ -12,7 +12,7 @@
 #include <QVBoxLayout>
 
 NewIssueDialog::NewIssueDialog(GitHubClient *client, QWidget *parent)
-    : QDialog(parent), m_client(client), m_verifyTimer(new QTimer(this)) {
+    : QDialog(parent), m_client(client), m_verifyTimer(new QTimer(this)), m_isFetchingRepos(false) {
     setupUI();
 
     m_verifyTimer->setSingleShot(true);
@@ -28,7 +28,7 @@ NewIssueDialog::NewIssueDialog(GitHubClient *client, QWidget *parent)
 
 void NewIssueDialog::setupUI() {
     setWindowTitle(tr("New Issue"));
-    resize(500, 400);
+    resize(500, 450);
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
@@ -60,6 +60,12 @@ void NewIssueDialog::setupUI() {
 
     m_titleEdit = new QLineEdit(this);
     mainLayout->addWidget(m_titleEdit);
+
+    QLabel *assigneeLabel = new QLabel(tr("Assignee (username, optional):"), this);
+    mainLayout->addWidget(assigneeLabel);
+
+    m_assigneeEdit = new QLineEdit(this);
+    mainLayout->addWidget(m_assigneeEdit);
 
     QLabel *bodyLabel = new QLabel(tr("Body:"), this);
     mainLayout->addWidget(bodyLabel);
@@ -116,24 +122,24 @@ void NewIssueDialog::loadCache() {
 }
 
 void NewIssueDialog::saveCache() {
-    QString dirPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
-    QDir dir;
-    dir.mkpath(dirPath);
+    QDir dir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
+    dir.mkpath(".");
 
     QString cachePath = dir.filePath("repos_cache.json");
-    QFile file(cachePath);
 
-    if (file.open(QIODevice::WriteOnly)) {
-        QJsonObject obj;
-        // Keep existing last_refresh if any
-        QFile existingFile(cachePath);
-        if (existingFile.open(QIODevice::ReadOnly)) {
-            QJsonDocument existingDoc = QJsonDocument::fromJson(existingFile.readAll());
-            if (existingDoc.isObject() && existingDoc.object().contains("last_refresh")) {
-                obj["last_refresh"] = existingDoc.object()["last_refresh"];
-            }
+    QJsonObject obj;
+    // Keep existing last_refresh if any
+    QFile existingFile(cachePath);
+    if (existingFile.open(QIODevice::ReadOnly)) {
+        QJsonDocument existingDoc = QJsonDocument::fromJson(existingFile.readAll());
+        if (existingDoc.isObject() && existingDoc.object().contains("last_refresh")) {
+            obj["last_refresh"] = existingDoc.object()["last_refresh"];
         }
+        existingFile.close();
+    }
 
+    QFile file(cachePath);
+    if (file.open(QIODevice::WriteOnly)) {
         obj["repos"] = m_allRepos;
 
         QJsonDocument doc(obj);
@@ -195,6 +201,7 @@ void NewIssueDialog::onCreateClicked() {
     QString repoName = m_repoComboBox->currentText().trimmed();
     QString title = m_titleEdit->text().trimmed();
     QString body = m_bodyEdit->toPlainText();
+    QString assignee = m_assigneeEdit->text().trimmed();
 
     if (repoName.isEmpty() || title.isEmpty()) {
         m_statusLabel->setText(tr("Title and Repository are required."));
@@ -206,7 +213,7 @@ void NewIssueDialog::onCreateClicked() {
     m_statusLabel->setText(tr("Creating issue..."));
     m_statusLabel->setStyleSheet("color: gray;");
 
-    m_client->createIssue(repoName, title, body);
+    m_client->createIssue(repoName, title, body, assignee);
 }
 
 void NewIssueDialog::onIssueCreated(const QByteArray &data) {
@@ -225,6 +232,7 @@ void NewIssueDialog::onIssueCreated(const QByteArray &data) {
 }
 
 void NewIssueDialog::onRefreshClicked() {
+    m_isFetchingRepos = true;
     m_refreshButton->setEnabled(false);
     m_statusLabel->setText(tr("Refreshing cache..."));
     m_statusLabel->setStyleSheet("color: gray;");
@@ -233,6 +241,7 @@ void NewIssueDialog::onRefreshClicked() {
 }
 
 void NewIssueDialog::onReposReceived(const QJsonArray &repos, const QString &nextPageUrl) {
+    if (!m_isFetchingRepos) return;
     for (int i = 0; i < repos.size(); ++i) {
         m_allRepos.append(repos[i]);
     }
@@ -247,6 +256,8 @@ void NewIssueDialog::onReposReceived(const QJsonArray &repos, const QString &nex
         m_statusLabel->setText(tr("Cache refreshed."));
         m_statusLabel->setStyleSheet("color: green;");
 
+        m_isFetchingRepos = false;
+        m_isFetchingRepos = false;
         // Re-verify current text if any
         if (!m_repoComboBox->currentText().isEmpty()) {
             onRepoTextChanged(m_repoComboBox->currentText());
@@ -256,6 +267,16 @@ void NewIssueDialog::onReposReceived(const QJsonArray &repos, const QString &nex
 
 void NewIssueDialog::onErrorOccurred(const QString &error) {
     m_refreshButton->setEnabled(true);
+    m_createButton->setEnabled(true);
     m_statusLabel->setText(tr("Error: %1").arg(error));
     m_statusLabel->setStyleSheet("color: red;");
+}
+
+void NewIssueDialog::setInitialRepo(const QString &repoFullName) {
+    int index = m_repoComboBox->findText(repoFullName, Qt::MatchContains);
+    if (index >= 0) {
+        m_repoComboBox->setCurrentIndex(index);
+    } else {
+        m_repoComboBox->setCurrentText(repoFullName);
+    }
 }

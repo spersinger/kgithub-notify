@@ -1,4 +1,5 @@
 #include "RepoListWindow.h"
+#include "NewIssueDialog.h"
 
 #include <QApplication>
 #include <QClipboard>
@@ -264,7 +265,13 @@ void RepoListWindow::onCustomContextMenuRequested(const QPoint &pos) {
     } else if (selected == copyAction) {
         QApplication::clipboard()->setText(url);
     } else if (selected == newIssueAction) {
-        QDesktopServices::openUrl(QUrl(url + "/issues/new"));
+        if (m_client) {
+            NewIssueDialog *dialog = new NewIssueDialog(m_client, this);
+            dialog->setAttribute(Qt::WA_DeleteOnClose);
+            QString repoName = QUrl(url).path().mid(1); // removes leading slash
+            dialog->setInitialRepo(repoName);
+            dialog->show();
+        }
     }
 }
 

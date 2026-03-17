@@ -272,6 +272,12 @@ void GitHubClient::onReplyFinished(QNetworkReply *reply) {
         handleUserReposReply(reply);
     } else if (type == "verifyRepo") {
         handleRepoVerifyReply(reply);
+    } else if (type == "createIssue") {
+        if (reply->error() == QNetworkReply::NoError) {
+            emit issueCreated(reply->readAll());
+        } else {
+            emit errorOccurred(reply->errorString());
+        }
     } else if (type == "raw") {
         if (reply->error() == QNetworkReply::NoError) {
             emit rawDataReceived(reply->readAll());
@@ -518,4 +524,30 @@ void GitHubClient::handleRepoVerifyReply(QNetworkReply *reply) {
     } else {
         emit repoVerified(repoFullName, false);
     }
+}
+
+
+void GitHubClient::createIssue(const QString &repoFullName, const QString &title, const QString &body, const QString &assignee) {
+    if (m_token.isEmpty()) return;
+
+    QUrl url(m_apiUrl + "/repos/" + repoFullName + "/issues");
+    QNetworkRequest request = createAuthenticatedRequest(url);
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+
+    QJsonObject obj;
+    obj["title"] = title;
+    if (!body.isEmpty()) {
+        obj["body"] = body;
+    }
+    if (!assignee.isEmpty()) {
+        QJsonArray assignees;
+        assignees.append(assignee);
+        obj["assignees"] = assignees;
+    }
+
+    QJsonDocument doc(obj);
+    QByteArray postData = doc.toJson();
+
+    QNetworkReply *reply = manager->post(request, postData);
+    reply->setProperty("type", "createIssue");
 }

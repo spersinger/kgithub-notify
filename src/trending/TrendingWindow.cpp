@@ -1,4 +1,5 @@
 #include "TrendingWindow.h"
+#include "NewIssueDialog.h"
 
 #include <QApplication>
 #include <QClipboard>
@@ -148,7 +149,13 @@ TrendingWindow::TrendingWindow(GitHubClient *client, QWidget *parent)
             QApplication::clipboard()->setText(url);
         } else if (selectedAction == newIssueAction) {
             QString url = item->data(Qt::UserRole).toString();
-            QDesktopServices::openUrl(QUrl(url + "/issues/new"));
+            if (m_client) {
+                NewIssueDialog *dialog = new NewIssueDialog(m_client, this);
+                dialog->setAttribute(Qt::WA_DeleteOnClose);
+                QString repoName = QUrl(url).path().mid(1); // removes leading slash
+                dialog->setInitialRepo(repoName);
+                dialog->show();
+            }
         } else if (selectedAction == viewRawAction) {
             QString rawJson = item->data(Qt::UserRole + 1).toString();
             // Display raw JSON in a simple widget or dialog
