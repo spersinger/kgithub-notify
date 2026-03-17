@@ -233,7 +233,7 @@ void NewIssueDialog::onIssueCreated(const QByteArray &data) {
         }
 
         if (errMsg.contains("Not Found") || errMsg.contains("404")) {
-            errMsg += "\n\n(Hint: Ensure the repository exists, has Issues enabled, and your Personal Access Token has the 'repo' scope.)";
+            errMsg += "\n\n(Hint: Ensure the repository exists, has Issues enabled, and your Personal Access Token has the 'repo', 'public_repo', or 'repo:status' scope depending on repository visibility.)";
         }
         m_statusLabel->setText(errMsg);
         m_statusLabel->setStyleSheet("color: red;");
@@ -280,7 +280,7 @@ void NewIssueDialog::onErrorOccurred(const QString &error) {
     m_createButton->setEnabled(true);
     QString errMsg = tr("Error: %1").arg(error);
     if (error.contains("404") || error.contains("Not Found")) {
-        errMsg += "\n\n(Hint: Ensure the repository exists, has Issues enabled, and your Personal Access Token has the 'repo' scope.)";
+        errMsg += "\n\n(Hint: Ensure the repository exists, has Issues enabled, and your Personal Access Token has the 'repo', 'public_repo', or 'repo:status' scope depending on repository visibility.)";
     }
     m_statusLabel->setText(errMsg);
     m_statusLabel->setStyleSheet("color: red;");
