@@ -75,6 +75,8 @@ void NewIssueDialog::setupUI() {
 
     m_statusLabel = new QLabel(this);
     m_statusLabel->setStyleSheet("color: gray;");
+    m_statusLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    m_statusLabel->setWordWrap(true);
     mainLayout->addWidget(m_statusLabel);
 
     QHBoxLayout *buttonLayout = new QHBoxLayout();
@@ -229,6 +231,10 @@ void NewIssueDialog::onIssueCreated(const QByteArray &data) {
         if (doc.isObject() && doc.object().contains("message")) {
             errMsg += " " + doc.object()["message"].toString();
         }
+
+        if (errMsg.contains("Not Found") || errMsg.contains("404")) {
+            errMsg += "\n\n(Hint: Ensure the repository exists, has Issues enabled, and your Personal Access Token has the 'repo' scope.)";
+        }
         m_statusLabel->setText(errMsg);
         m_statusLabel->setStyleSheet("color: red;");
         m_createButton->setEnabled(true);
@@ -262,7 +268,6 @@ void NewIssueDialog::onReposReceived(const QJsonArray &repos, const QString &nex
         m_statusLabel->setStyleSheet("color: green;");
 
         m_isFetchingRepos = false;
-        m_isFetchingRepos = false;
         // Re-verify current text if any
         if (!m_repoComboBox->currentText().isEmpty()) {
             onRepoTextChanged(m_repoComboBox->currentText());
@@ -273,12 +278,16 @@ void NewIssueDialog::onReposReceived(const QJsonArray &repos, const QString &nex
 void NewIssueDialog::onErrorOccurred(const QString &error) {
     m_refreshButton->setEnabled(true);
     m_createButton->setEnabled(true);
-    m_statusLabel->setText(tr("Error: %1").arg(error));
+    QString errMsg = tr("Error: %1").arg(error);
+    if (error.contains("404") || error.contains("Not Found")) {
+        errMsg += "\n\n(Hint: Ensure the repository exists, has Issues enabled, and your Personal Access Token has the 'repo' scope.)";
+    }
+    m_statusLabel->setText(errMsg);
     m_statusLabel->setStyleSheet("color: red;");
 }
 
 void NewIssueDialog::setInitialRepo(const QString &repoFullName) {
-    int index = m_repoComboBox->findText(repoFullName, Qt::MatchContains);
+    int index = m_repoComboBox->findText(repoFullName, Qt::MatchExactly);
     if (index >= 0) {
         m_repoComboBox->setCurrentIndex(index);
     } else {
