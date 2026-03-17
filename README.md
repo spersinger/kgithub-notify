@@ -103,3 +103,9 @@ To ensure the application can fetch your notifications and their details (especi
 ## 📄 License
 
 This project is licensed under the BSD 3-Clause License - see the [LICENSE](LICENSE) file for details.
+
+
+## GitHub Token Permissions
+When setting up your Personal Access Token, ensure it has the appropriate permissions:
+* **Classic PAT**: `repo`, `read:org`, `notifications` scopes.
+* **Fine-grained Token**: Read/Write access for `Issues` & `Pull requests`, and Read access for `Metadata`.

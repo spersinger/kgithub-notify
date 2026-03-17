@@ -26,6 +26,7 @@
             <text>&amp;Tools</text>
             <Action name="trending"/>
             <Action name="debug"/>
+            <Action name="new_issue"/>
             <Action name="repo_list"/>
             <Separator/>
             <Action name="issues_menu"/>

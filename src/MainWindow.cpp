@@ -36,6 +36,7 @@
 #include "SettingsDialog.h"
 #include "WorkItemWindow.h"
 #include "trending/TrendingWindow.h"
+#include "NewIssueDialog.h"
 
 // -----------------------------------------------------------------------------
 // Constants / Static Helpers
@@ -580,6 +581,13 @@ void MainWindow::updateTrayMenu() {
     connect(settingsAction, &QAction::triggered, this, &MainWindow::showSettings);
     trayIconMenu->addAction(settingsAction);
 
+
+    QAction *newIssueTrayAction = new QAction(tr("New Issue..."), trayIconMenu);
+    connect(newIssueTrayAction, &QAction::triggered, this, &MainWindow::showNewIssueDialog);
+    trayIconMenu->addAction(newIssueTrayAction);
+
+    trayIconMenu->addSeparator();
+
     QAction *notificationSettingsAction = new QAction(themedIcon({QStringLiteral("preferences-desktop-notification")}),
                                                       tr("Configure Notifications"), trayIconMenu);
     connect(notificationSettingsAction, &QAction::triggered, this, &MainWindow::openKdeNotificationSettings);
@@ -897,6 +905,10 @@ void MainWindow::setupMenus() {
     connect(debugAction, &QAction::triggered, this, [this]() { showDebugWindow(); });
     actionCollection()->addAction(QStringLiteral("debug"), debugAction);
 
+    QAction *newIssueAction = new QAction(tr("New Issue..."), this);
+    connect(newIssueAction, &QAction::triggered, this, &MainWindow::showNewIssueDialog);
+    actionCollection()->addAction(QStringLiteral("new_issue"), newIssueAction);
+
     QAction *repoListAction = new QAction(tr("Repositories List"), this);
     connect(repoListAction, &QAction::triggered, this, &MainWindow::showRepoListWindow);
     actionCollection()->addAction(QStringLiteral("repo_list"), repoListAction);
@@ -1148,4 +1160,10 @@ void MainWindow::updateSelectionComboBox() {
 
     selectionComboBox->setCurrentIndex(0);
     selectionComboBox->blockSignals(wasBlocked);
+}
+
+void MainWindow::showNewIssueDialog() {
+    NewIssueDialog *dialog = new NewIssueDialog(client, this);
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+    dialog->show();
 }

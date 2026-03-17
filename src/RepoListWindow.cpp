@@ -1,4 +1,5 @@
 #include "RepoListWindow.h"
+#include "NewIssueDialog.h"
 
 #include <QApplication>
 #include <QClipboard>
@@ -255,6 +256,8 @@ void RepoListWindow::onCustomContextMenuRequested(const QPoint &pos) {
     QMenu menu(this);
     QAction *openAction = menu.addAction(QIcon::fromTheme("internet-web-browser"), tr("Open in Browser"));
     QAction *copyAction = menu.addAction(QIcon::fromTheme("edit-copy"), tr("Copy URL"));
+    menu.addSeparator();
+    QAction *newIssueAction = menu.addAction(QIcon::fromTheme("document-new"), tr("New Issue..."));
 
     QAction *selected = menu.exec(m_table->viewport()->mapToGlobal(pos));
 
@@ -262,6 +265,14 @@ void RepoListWindow::onCustomContextMenuRequested(const QPoint &pos) {
         QDesktopServices::openUrl(QUrl(url));
     } else if (selected == copyAction) {
         QApplication::clipboard()->setText(url);
+    } else if (selected == newIssueAction) {
+        if (m_client) {
+            NewIssueDialog *dialog = new NewIssueDialog(m_client, this);
+            dialog->setAttribute(Qt::WA_DeleteOnClose);
+            QString repoName = QUrl(url).path().mid(1); // removes leading slash
+            dialog->setInitialRepo(repoName);
+            dialog->show();
+        }
     }
 }
 

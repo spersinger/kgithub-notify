@@ -1,4 +1,5 @@
 #include "TrendingWindow.h"
+#include "../NewIssueDialog.h"
 
 #include <QApplication>
 #include <QClipboard>
@@ -135,6 +136,9 @@ TrendingWindow::TrendingWindow(GitHubClient *client, QWidget *parent)
         QMenu menu(this);
         QAction *openAction = menu.addAction(tr("Open in Browser"));
         QAction *copyAction = menu.addAction(tr("Copy Link"));
+        menu.addSeparator();
+        QAction *newIssueAction = menu.addAction(tr("New Issue..."));
+        menu.addSeparator();
         QAction *viewRawAction = menu.addAction(tr("View Raw JSON"));
 
         QAction *selectedAction = menu.exec(tableWidget->mapToGlobal(pos));
@@ -143,6 +147,15 @@ TrendingWindow::TrendingWindow(GitHubClient *client, QWidget *parent)
         } else if (selectedAction == copyAction) {
             QString url = item->data(Qt::UserRole).toString();
             QApplication::clipboard()->setText(url);
+        } else if (selectedAction == newIssueAction) {
+            QString url = item->data(Qt::UserRole).toString();
+            if (m_client) {
+                NewIssueDialog *dialog = new NewIssueDialog(m_client, this);
+                dialog->setAttribute(Qt::WA_DeleteOnClose);
+                QString repoName = QUrl(url).path().mid(1); // removes leading slash
+                dialog->setInitialRepo(repoName);
+                dialog->show();
+            }
         } else if (selectedAction == viewRawAction) {
             QString rawJson = item->data(Qt::UserRole + 1).toString();
             // Display raw JSON in a simple widget or dialog

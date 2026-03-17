@@ -25,3 +25,7 @@ Break down large functions into smaller, single-purpose helper functions. This i
 ## Building and Compiling (Qt6 / KF6 Migration)
 This project is currently migrating to Qt6 and KDE Frameworks 6 (KF6).
 If your environment does not have the required Qt6 or KF6 development headers, there is a Dockerfile located in `.jules/Dockerfile` that can be used to set up an isolated build container (e.g. `debian:testing`) with all required `libkf6*` dependencies.
+
+
+## GitHub Personal Access Tokens (PATs)
+When token requirements change for API endpoints (Classic vs. Fine-grained scopes), update the corresponding hints in the UI (e.g., SettingsDialog, NewIssueDialog) and documentation (README.md) to reflect the new requirements.
