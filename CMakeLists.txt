@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(kgithub-notify VERSION 0.1.3)
+project(kgithub-notify VERSION 0.1.4)
 
 include(GNUInstallDirs)
 
