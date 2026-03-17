@@ -289,6 +289,8 @@ jobs:
           tag_name: ${{ needs.bump-version.outputs.new_tag || github.ref_name }}
           name: Release ${{ needs.bump-version.outputs.new_tag || github.ref_name }}
           files: build/kgithub-notify
+          generate_release_notes: true
+          discussion_category_name: Announcements
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -301,6 +303,8 @@ jobs:
           draft: false
           prerelease: true
           files: build/kgithub-notify
+          generate_release_notes: true
+          discussion_category_name: Announcements
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
