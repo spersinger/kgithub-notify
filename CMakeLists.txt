@@ -116,3 +116,7 @@ install(FILES src/kgithub-notify.notifyrc
 install(FILES src/kgithub-notifyui.rc
     DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/kxmlgui6/kgithub-notify
 )
+
+install(FILES src/com.arran4.kgithub_notify.metainfo.xml
+    DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/metainfo
+)
