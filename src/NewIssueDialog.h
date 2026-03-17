@@ -2,8 +2,11 @@
 #define NEWISSUEDIALOG_H
 
 #include <QComboBox>
+#include <QCompleter>
 #include <QDialog>
 #include <QLabel>
+#include <QLineEdit>
+#include <QTextEdit>
 #include <QTimer>
 #include <QPushButton>
 
@@ -22,6 +25,7 @@ class NewIssueDialog : public QDialog {
     void onCreateClicked();
     void onRefreshClicked();
     void onReposReceived(const QJsonArray &repos, const QString &nextPageUrl);
+    void onIssueCreated(const QByteArray &data);
     void onErrorOccurred(const QString &error);
 
    private:
@@ -31,6 +35,8 @@ class NewIssueDialog : public QDialog {
 
     GitHubClient *m_client;
     QComboBox *m_repoComboBox;
+    QLineEdit *m_titleEdit;
+    QTextEdit *m_bodyEdit;
     QPushButton *m_createButton;
     QPushButton *m_refreshButton;
     QLabel *m_statusLabel;

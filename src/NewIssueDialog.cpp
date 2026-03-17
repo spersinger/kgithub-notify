@@ -21,22 +21,31 @@ NewIssueDialog::NewIssueDialog(GitHubClient *client, QWidget *parent)
     connect(m_client, &GitHubClient::repoVerified, this, &NewIssueDialog::onRepoVerified);
     connect(m_client, &GitHubClient::userReposReceived, this, &NewIssueDialog::onReposReceived);
     connect(m_client, &GitHubClient::errorOccurred, this, &NewIssueDialog::onErrorOccurred);
+    connect(m_client, &GitHubClient::issueCreated, this, &NewIssueDialog::onIssueCreated);
 
     loadCache();
 }
 
 void NewIssueDialog::setupUI() {
     setWindowTitle(tr("New Issue"));
-    resize(400, 150);
+    resize(500, 400);
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
-    QLabel *instructionLabel = new QLabel(tr("Select or enter a repository to create an issue in:"), this);
+    QLabel *instructionLabel = new QLabel(tr("Repository:"), this);
     mainLayout->addWidget(instructionLabel);
 
     QHBoxLayout *repoLayout = new QHBoxLayout();
     m_repoComboBox = new QComboBox(this);
     m_repoComboBox->setEditable(true);
+    m_repoComboBox->setInsertPolicy(QComboBox::NoInsert);
+
+    QCompleter *completer = m_repoComboBox->completer();
+    if (completer) {
+        completer->setCompletionMode(QCompleter::PopupCompletion);
+        completer->setFilterMode(Qt::MatchContains);
+    }
+
     m_repoComboBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     connect(m_repoComboBox, &QComboBox::currentTextChanged, this, &NewIssueDialog::onRepoTextChanged);
     repoLayout->addWidget(m_repoComboBox);
@@ -45,6 +54,18 @@ void NewIssueDialog::setupUI() {
     connect(m_refreshButton, &QPushButton::clicked, this, &NewIssueDialog::onRefreshClicked);
     repoLayout->addWidget(m_refreshButton);
     mainLayout->addLayout(repoLayout);
+
+    QLabel *titleLabel = new QLabel(tr("Title:"), this);
+    mainLayout->addWidget(titleLabel);
+
+    m_titleEdit = new QLineEdit(this);
+    mainLayout->addWidget(m_titleEdit);
+
+    QLabel *bodyLabel = new QLabel(tr("Body:"), this);
+    mainLayout->addWidget(bodyLabel);
+
+    m_bodyEdit = new QTextEdit(this);
+    mainLayout->addWidget(m_bodyEdit);
 
     m_statusLabel = new QLabel(this);
     m_statusLabel->setStyleSheet("color: gray;");
@@ -172,11 +193,35 @@ void NewIssueDialog::onRepoVerified(const QString &repoFullName, bool exists) {
 
 void NewIssueDialog::onCreateClicked() {
     QString repoName = m_repoComboBox->currentText().trimmed();
-    if (repoName.isEmpty()) return;
+    QString title = m_titleEdit->text().trimmed();
+    QString body = m_bodyEdit->toPlainText();
 
-    QUrl url(QString("https://github.com/%1/issues/new").arg(repoName));
-    QDesktopServices::openUrl(url);
-    accept();
+    if (repoName.isEmpty() || title.isEmpty()) {
+        m_statusLabel->setText(tr("Title and Repository are required."));
+        m_statusLabel->setStyleSheet("color: red;");
+        return;
+    }
+
+    m_createButton->setEnabled(false);
+    m_statusLabel->setText(tr("Creating issue..."));
+    m_statusLabel->setStyleSheet("color: gray;");
+
+    m_client->createIssue(repoName, title, body);
+}
+
+void NewIssueDialog::onIssueCreated(const QByteArray &data) {
+    QJsonDocument doc = QJsonDocument::fromJson(data);
+    if (doc.isObject() && doc.object().contains("html_url")) {
+        QString url = doc.object()["html_url"].toString();
+        m_statusLabel->setText(tr("Issue created successfully."));
+        m_statusLabel->setStyleSheet("color: green;");
+        QDesktopServices::openUrl(QUrl(url));
+        accept();
+    } else {
+        m_statusLabel->setText(tr("Failed to parse response."));
+        m_statusLabel->setStyleSheet("color: red;");
+        m_createButton->setEnabled(true);
+    }
 }
 
 void NewIssueDialog::onRefreshClicked() {
