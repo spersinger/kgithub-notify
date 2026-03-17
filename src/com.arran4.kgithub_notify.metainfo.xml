@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.arran4.kgithub_notify</id>
+  <name>KGitHub Notify</name>
+  <summary>GitHub Notification System Tray</summary>
+  <description>
+    <p>A sleek GitHub notification system tray application written natively in C++ using Qt6 and KDE Frameworks 6 (KF6). It quietly monitors your GitHub account, notifying you when there are new notifications, and provides a rich desktop interface to manage them.</p>
+  </description>
+  <launchable type="desktop-id">com.arran4.kgithub_notify.desktop</launchable>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>BSD-3-Clause</project_license>
+  <developer_name>Kgithub-notify Authors</developer_name>
+</component>
