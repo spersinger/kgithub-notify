@@ -546,7 +546,7 @@ void GitHubClient::createIssue(const QString &repoFullName, const QString &title
     }
 
     QJsonDocument doc(obj);
-    QByteArray postData = doc.toJson();
+    QByteArray postData = doc.toJson(QJsonDocument::Compact);
 
     QNetworkReply *reply = manager->post(request, postData);
     reply->setProperty("type", "createIssue");

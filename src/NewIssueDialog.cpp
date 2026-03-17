@@ -225,10 +225,15 @@ void NewIssueDialog::onIssueCreated(const QByteArray &data) {
         QDesktopServices::openUrl(QUrl(url));
         accept();
     } else {
-        m_statusLabel->setText(tr("Failed to parse response."));
+        QString errMsg = tr("Failed to create issue.");
+        if (doc.isObject() && doc.object().contains("message")) {
+            errMsg += " " + doc.object()["message"].toString();
+        }
+        m_statusLabel->setText(errMsg);
         m_statusLabel->setStyleSheet("color: red;");
         m_createButton->setEnabled(true);
     }
+
 }
 
 void NewIssueDialog::onRefreshClicked() {
