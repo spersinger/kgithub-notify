@@ -22,6 +22,8 @@ class SettingsDialog : public QDialog {
     static QFuture<QString> getTokenAsync();
     static int getInterval();
     static GetDataOption getGetDataOption();
+    static int getSummaryThreshold();
+    static int getNotificationDelayMs();
 
    private slots:
     void saveSettings();
@@ -36,6 +38,8 @@ class SettingsDialog : public QDialog {
     QLineEdit *tokenEdit;
     QComboBox *intervalCombo;
     QComboBox *dataOptionCombo;
+    QComboBox *summaryThresholdCombo;
+    QComboBox *notificationDelayCombo;
     QCheckBox *autostartCheckBox;
     QCheckBox *startMinimizedCheckBox;
     QPushButton *testButton;

@@ -1114,7 +1114,10 @@ void MainWindow::updateTrayIconState(int unreadCount, int newNotifications,
 
     trayIcon->setIcon(QIcon(":/assets/icon-dotted.png"));
     if (newNotifications > 0) {
-        if (newNotifications > 3) {
+        int threshold = SettingsDialog::getSummaryThreshold();
+        int stepDelayMs = SettingsDialog::getNotificationDelayMs();
+
+        if (newNotifications > threshold) {
             sendSummaryNotification(newNotifications, newlyAddedNotifications);
         } else {
             int delayMs = 0;
@@ -1122,7 +1125,7 @@ void MainWindow::updateTrayIconState(int unreadCount, int newNotifications,
                 QTimer::singleShot(delayMs, this, [this, n]() {
                     sendNotification(n);
                 });
-                delayMs += 1000;
+                delayMs += stepDelayMs;
             }
         }
     }
