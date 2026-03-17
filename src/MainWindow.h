@@ -31,6 +31,7 @@ class QLineEdit;
 class DebugWindow;
 class RepoListWindow;
 class TrendingWindow;
+class NewIssueDialog;
 
 class MainWindow : public KXmlGuiWindow {
     Q_OBJECT
@@ -69,6 +70,7 @@ class MainWindow : public KXmlGuiWindow {
     void showDebugWindow(const QString &url = "");
     void showRepoListWindow();
     void showTrendingWindow();
+    void showNewIssueDialog();
     void showWorkItems(const QString &title, int endpointType, const QString &query);
 
     // From ListWidget

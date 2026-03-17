@@ -63,7 +63,7 @@ void GitHubClient::checkNotifications() {
     query.addQueryItem("all", "true");
     url.setQuery(query);
 
-    QNetworkRequest request = createRequest(url);
+    QNetworkRequest request = createAuthenticatedRequest(url);
 
     if (m_activeNotificationReply) {
         m_activeNotificationReply->abort();
@@ -87,7 +87,7 @@ void GitHubClient::loadMore() {
     }
 
     QUrl url(m_nextPageUrl);
-    QNetworkRequest request = createRequest(url);
+    QNetworkRequest request = createAuthenticatedRequest(url);
 
     QNetworkReply *reply = manager->get(request);
     reply->setProperty("type", "notifications");
@@ -104,7 +104,7 @@ void GitHubClient::verifyToken() {
     }
 
     QUrl url(m_apiUrl + "/user");
-    QNetworkRequest request = createRequest(url);
+    QNetworkRequest request = createAuthenticatedRequest(url);
 
     QNetworkReply *reply = manager->get(request);
     reply->setProperty("type", "verification");
@@ -116,7 +116,7 @@ void GitHubClient::markAsRead(const QString &id) {
     m_pendingPatchRequests++;
 
     QUrl url(m_apiUrl + "/notifications/threads/" + id);
-    QNetworkRequest request = createRequest(url);
+    QNetworkRequest request = createAuthenticatedRequest(url);
 
     QNetworkReply *reply = manager->sendCustomRequest(request, "PATCH");
     reply->setProperty("type", "patch");
@@ -128,7 +128,7 @@ void GitHubClient::markAsDone(const QString &id) {
     m_pendingPatchRequests++;
 
     QUrl url(m_apiUrl + "/notifications/threads/" + id);
-    QNetworkRequest request = createRequest(url);
+    QNetworkRequest request = createAuthenticatedRequest(url);
 
     QNetworkReply *reply = manager->deleteResource(request);
     reply->setProperty("type", "delete");
@@ -140,7 +140,7 @@ void GitHubClient::markAsReadAndDone(const QString &id) {
     m_pendingPatchRequests++;
 
     QUrl url(m_apiUrl + "/notifications/threads/" + id);
-    QNetworkRequest request = createRequest(url);
+    QNetworkRequest request = createAuthenticatedRequest(url);
 
     QNetworkReply *reply = manager->sendCustomRequest(request, "PATCH");
     reply->setProperty("type", "read_and_done");
@@ -173,7 +173,7 @@ void GitHubClient::requestRaw(const QString &endpoint, const QString &method, co
     if (m_token.isEmpty()) return;
     QString urlStr = endpoint.startsWith("http") ? endpoint : m_apiUrl + endpoint;
     QUrl url(urlStr);
-    QNetworkRequest request = createRequest(url);
+    QNetworkRequest request = createAuthenticatedRequest(url);
 
     if (!body.isEmpty()) {
         request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
@@ -213,7 +213,7 @@ void GitHubClient::fetchUserRepos(const QString &pageUrl) {
         url = QUrl(pageUrl);
     }
 
-    QNetworkRequest request = createRequest(url);
+    QNetworkRequest request = createAuthenticatedRequest(url);
     QNetworkReply *reply = manager->get(request);
     reply->setProperty("type", "repos");
 }
@@ -270,6 +270,8 @@ void GitHubClient::onReplyFinished(QNetworkReply *reply) {
         handleVerificationReply(reply);
     } else if (type == "repos") {
         handleUserReposReply(reply);
+    } else if (type == "verifyRepo") {
+        handleRepoVerifyReply(reply);
     } else if (type == "raw") {
         if (reply->error() == QNetworkReply::NoError) {
             emit rawDataReceived(reply->readAll());
@@ -496,5 +498,24 @@ void GitHubClient::onRequestTimeout() {
     emit errorOccurred("Request timed out");
     if (m_activeNotificationReply) {
         m_activeNotificationReply->abort();
+    }
+}
+
+void GitHubClient::verifyRepo(const QString &repoFullName) {
+    if (m_token.isEmpty()) return;
+
+    QUrl url(m_apiUrl + "/repos/" + repoFullName);
+    QNetworkRequest request = createAuthenticatedRequest(url);
+    QNetworkReply *reply = manager->get(request);
+    reply->setProperty("type", "verifyRepo");
+    reply->setProperty("repoFullName", repoFullName);
+}
+
+void GitHubClient::handleRepoVerifyReply(QNetworkReply *reply) {
+    QString repoFullName = reply->property("repoFullName").toString();
+    if (reply->error() == QNetworkReply::NoError) {
+        emit repoVerified(repoFullName, true);
+    } else {
+        emit repoVerified(repoFullName, false);
     }
 }

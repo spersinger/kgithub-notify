@@ -1,0 +1,43 @@
+#ifndef NEWISSUEDIALOG_H
+#define NEWISSUEDIALOG_H
+
+#include <QComboBox>
+#include <QDialog>
+#include <QLabel>
+#include <QTimer>
+#include <QPushButton>
+
+#include "GitHubClient.h"
+
+class NewIssueDialog : public QDialog {
+    Q_OBJECT
+
+   public:
+    explicit NewIssueDialog(GitHubClient *client, QWidget *parent = nullptr);
+
+   private slots:
+    void onRepoTextChanged(const QString &text);
+    void verifyRepo();
+    void onRepoVerified(const QString &repoFullName, bool exists);
+    void onCreateClicked();
+    void onRefreshClicked();
+    void onReposReceived(const QJsonArray &repos, const QString &nextPageUrl);
+    void onErrorOccurred(const QString &error);
+
+   private:
+    void setupUI();
+    void loadCache();
+    void saveCache();
+
+    GitHubClient *m_client;
+    QComboBox *m_repoComboBox;
+    QPushButton *m_createButton;
+    QPushButton *m_refreshButton;
+    QLabel *m_statusLabel;
+    QTimer *m_verifyTimer;
+
+    QJsonArray m_allRepos;
+    QString m_currentVerifyRepo;
+};
+
+#endif // NEWISSUEDIALOG_H

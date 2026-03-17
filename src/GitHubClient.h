@@ -34,6 +34,7 @@ class GitHubClient : public QObject {
     void fetchImage(const QString &imageUrl, const QString &notificationId);
     void requestRaw(const QString &endpoint, const QString &method = "GET", const QByteArray &body = QByteArray());
     void fetchUserRepos(const QString &pageUrl = QString());
+    void verifyRepo(const QString &repoFullName);
     QNetworkRequest createAuthenticatedRequest(const QUrl &url) const;
 
    signals:
@@ -48,6 +49,7 @@ class GitHubClient : public QObject {
     void errorOccurred(const QString &error);
     void authError(const QString &message);
     void tokenVerified(bool valid, const QString &message);
+    void repoVerified(const QString &repoFullName, bool exists);
 
    private slots:
     void onReplyFinished(QNetworkReply *reply);
@@ -69,6 +71,7 @@ class GitHubClient : public QObject {
     void handleImageReply(QNetworkReply *reply);
     void handleVerificationReply(QNetworkReply *reply);
     void handleUserReposReply(QNetworkReply *reply);
+    void handleRepoVerifyReply(QNetworkReply *reply);
     void handlePatchReply(QNetworkReply *reply);
     void handleNotificationsReply(QNetworkReply *reply);
 };

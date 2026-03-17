@@ -69,6 +69,8 @@ add_executable(kgithub-notify
     src/PullRequestWindow.h
     src/ActionWindow.cpp
     src/ActionWindow.h
+    src/NewIssueDialog.cpp
+    src/NewIssueDialog.h
     src/resources.qrc
 )
 
