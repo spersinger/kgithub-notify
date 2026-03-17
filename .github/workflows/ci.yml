@@ -53,6 +53,7 @@ permissions:
   checks: write
   packages: write
   security-events: write
+  discussions: write
 
 jobs:
   route:
